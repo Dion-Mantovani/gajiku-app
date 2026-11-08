@@ -302,9 +302,7 @@ const totalTidakHadir =
       <div
         id="streak-container"
         class="relative flex items-center justify-between px-1"
-      >
-        <div class="absolute left-4 right-4 top-[24px] h-0.5 bg-slate-100 -z-0"></div>
-      </div>
+      ></div>
     </div>
   </div>
 
@@ -525,9 +523,8 @@ const totalTidakHadir =
     const progressHadir = document.getElementById('progress-hadir');
     const progressTotal = document.getElementById('progress-total');
     const progressTrack = document.getElementById('progress-track');
-    const progressSegments = document.querySelectorAll<HTMLElement>(
-      '[data-segment]'
-    );
+    const progressSegments =
+      document.querySelectorAll<HTMLElement>('[data-segment]');
     const totalWorkingDays = salaryData.totalWorkingDaysInMonth;
     const progressPercent =
       totalWorkingDays > 0
@@ -782,8 +779,7 @@ const totalTidakHadir =
     const streakContainer = document.getElementById('streak-container');
     if (!streakContainer) return;
 
-    streakContainer.innerHTML =
-      '<div class="absolute left-4 right-4 top-[24px] h-0.5 bg-slate-100 -z-0"></div>';
+    streakContainer.replaceChildren();
 
     for (let i = 0; i < 7; i++) {
       const d = new Date(mondayDate);
@@ -806,7 +802,8 @@ const totalTidakHadir =
       let statusBadgeColor = 'bg-slate-100 text-slate-600';
 
       if (isSunday) {
-        circleStyle = 'border-solid border-rose-200 bg-transparent text-rose-500';
+        circleStyle =
+          'border-solid border-rose-200 bg-transparent text-rose-500';
         statusTitle = 'Hari Minggu';
         statusDesc = 'Libur akhir pekan. Streak terlindungi & tidak terputus.';
         statusBadgeColor = 'bg-rose-50 text-rose-700 border border-rose-200';
@@ -824,7 +821,8 @@ const totalTidakHadir =
           'border-solid border-indigo-200 bg-transparent text-indigo-500';
         statusTitle = 'Libur';
         statusDesc = 'Hari libur aman. Streak terlindungi dan tidak terputus.';
-        statusBadgeColor = 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+        statusBadgeColor =
+          'bg-indigo-50 text-indigo-700 border border-indigo-200';
         circleContent = SHIELD_ICON;
       } else if (
         status === 'sakit' ||
