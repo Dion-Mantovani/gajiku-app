@@ -18,6 +18,7 @@ import {
   Calendar as CalendarIcon,
   FileText,
   ChevronDown,
+  Zap,
 } from '@lucide/astro';
 
 const settings = getSettings();
@@ -182,9 +183,14 @@ const totalTidakHadir =
     </div>
 
     <!-- SECTION ABSEN CEPAT -->
-    <div id="quick-attendance-section" class="app-card space-y-3 p-4">
+    <div id="quick-attendance-section" class="app-card-action space-y-3">
       <div class="flex items-center justify-between px-1">
-        <h3 class="section-title">Absen Cepat Hari Ini</h3>
+        <div class="flex items-center gap-2">
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+            <Zap class="h-4 w-4" />
+          </span>
+          <h3 class="section-title">Absen Cepat Hari Ini</h3>
+        </div>
         <div id="quick-status-display" class="transition-all">
           <!-- Diisi via JS Script -->
         </div>
@@ -194,7 +200,7 @@ const totalTidakHadir =
         <button
           type="button"
           onclick="setAttendance('hadir')"
-          class="bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 font-bold py-2.5 px-2 rounded-xl border border-emerald-200/80 transition-all text-xs flex items-center justify-center"
+          class="bg-white hover:bg-emerald-50 active:scale-95 text-emerald-700 font-bold py-2.5 px-2 rounded-xl border border-emerald-200 shadow-sm transition-all text-xs flex items-center justify-center"
         >
           Hadir
         </button>
@@ -204,7 +210,7 @@ const totalTidakHadir =
             type="button"
             id="btn-dropdown-tidak-hadir"
             onclick="toggleTidakHadirDropdown(event)"
-            class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 active:scale-95 font-bold py-2.5 px-2 rounded-xl border border-amber-200/80 transition-all text-xs flex items-center justify-center gap-1"
+            class="w-full bg-white hover:bg-amber-50 text-amber-700 active:scale-95 font-bold py-2.5 px-2 rounded-xl border border-amber-200 shadow-sm transition-all text-xs flex items-center justify-center gap-1"
           >
             Tidak Hadir
             <ChevronDown class="w-3 h-3 opacity-60" />
@@ -212,7 +218,7 @@ const totalTidakHadir =
 
           <div
             id="dropdown-tidak-hadir-menu"
-            class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl shadow-2xl border border-slate-100 p-1.5 z-40 space-y-1 animate-in fade-in slide-in-from-top-2 duration-200"
+            class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl shadow-2xl border border-emerald-100 p-1.5 z-40 space-y-1 animate-in fade-in slide-in-from-top-2 duration-200"
           >
             <button
               type="button"
@@ -241,7 +247,7 @@ const totalTidakHadir =
         <button
           type="button"
           onclick="setAttendance('libur_perusahaan')"
-          class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 active:scale-95 font-bold py-2.5 px-2 rounded-xl border border-indigo-200/80 transition-all text-xs flex items-center justify-center"
+          class="bg-white hover:bg-indigo-50 text-indigo-700 active:scale-95 font-bold py-2.5 px-2 rounded-xl border border-indigo-200 shadow-sm transition-all text-xs flex items-center justify-center"
         >
           Libur
         </button>
