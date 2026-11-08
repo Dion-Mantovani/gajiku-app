@@ -106,15 +106,18 @@ const totalTidakHadir =
         </div>
       </div>
 
-      <!-- Badge Streak Global (Rekor Tertinggi) -->
-      <div class="flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 px-3.5 py-1.5 rounded-full text-amber-300 font-bold text-xs">
-        <Flame class="w-4 h-4 fill-amber-400 text-amber-500 animate-pulse" />
+      <!-- Badge Streak Global -->
+      <div class="flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1.5 text-amber-300">
+        <Flame class="w-3.5 h-3.5 fill-amber-400 text-amber-500 animate-pulse" />
         <div class="flex flex-col leading-tight">
-          <span class="text-[9px] font-semibold text-amber-400/80 tracking-wider uppercase">
-            Tertinggi
+          <span class="text-xs font-bold tabular-nums" id="header-streak-badge">
+            {currentStreak} Hari
           </span>
-          <span class="tabular-nums" id="header-streak-badge">
-            {highestStreakRecord} Hari
+          <span
+            id="header-streak-record-row"
+            class="hidden text-[9px] font-semibold text-amber-400/70"
+          >
+            Rekor <span id="header-streak-record">{highestStreakRecord}</span>
           </span>
         </div>
       </div>
@@ -343,6 +346,7 @@ const totalTidakHadir =
     saveMonthAttendance,
     formatYearMonth,
     formatDateString,
+    getLatestRecordedDate,
     initializeAutoPresent,
     calculateSalary,
     updateHighestStreak,
@@ -582,10 +586,17 @@ const totalTidakHadir =
     window.location.reload();
   };
 
-  // 1. HITUNG STREAK GLOBAL (Akumulasi & Rekor Tertinggi)
+  // 1. HITUNG STREAK GLOBAL (dari data terakhir yang sudah diisi)
   function calculateGlobalStreak(date: Date): number {
     let streakCount = 0;
     let checkDate = new Date(date);
+
+    // Mulai dari tanggal terakhir yang punya catatan, bukan selalu hari ini
+    const latestRecorded = getLatestRecordedDate();
+    if (latestRecorded) {
+      const [year, month, day] = latestRecorded.split('-').map(Number);
+      checkDate = new Date(year, month - 1, day);
+    }
 
     while (true) {
       const dStr = formatDateString(checkDate);
@@ -617,19 +628,22 @@ const totalTidakHadir =
       }
     }
 
-    return updateHighestStreak(streakCount);
+    return streakCount;
   }
 
-  // 2. HITUNG STREAK MINGGUAN (Minggu - Sabtu Berjalan)
+  // 2. HITUNG STREAK MINGGUAN (Minggu - Sabtu)
   function calculateWeeklyStreak(date: Date): number {
     const weekStart = new Date(date);
     weekStart.setDate(date.getDate() - date.getDay()); // Minggu
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6); // Sabtu
 
     let currentActiveStreak = 0;
     let maxStreakThisWeek = 0;
 
     let checkDate = new Date(weekStart);
-    while (checkDate <= date) {
+    while (checkDate <= weekEnd) {
       const dStr = formatDateString(checkDate);
       const ym = formatYearMonth(checkDate);
       const record = getMonthAttendance(ym);
@@ -672,12 +686,23 @@ const totalTidakHadir =
     activeStreakDate = null;
     document.getElementById('custom-streak-tooltip')?.remove();
 
-    // Update Header Badge (Streak Global Tertinggi)
-    const activeHighestStreak = calculateGlobalStreak(date);
-    const badgeEl = document.getElementById('header-streak-badge');
-    if (badgeEl) badgeEl.innerText = `${activeHighestStreak} Hari`;
+    // Header: streak berjalan + rekor tertinggi
+    const currentStreak = calculateGlobalStreak(date);
+    const highestStreak = updateHighestStreak(currentStreak);
 
-    // Update Card Streak Mingguan (Minggu Berjalan saja)
+    const badgeEl = document.getElementById('header-streak-badge');
+    if (badgeEl) badgeEl.innerText = `${currentStreak} Hari`;
+
+    const recordEl = document.getElementById('header-streak-record');
+    if (recordEl) recordEl.innerText = String(highestStreak);
+
+    // Tampilkan baris rekor hanya kalau streak sedang pecah
+    const recordRowEl = document.getElementById('header-streak-record-row');
+    if (recordRowEl) {
+      recordRowEl.classList.toggle('hidden', currentStreak >= highestStreak);
+    }
+
+    // Kartu streak mingguan: minggu berjalan (Minggu - Sabtu)
     const weeklyStreak = calculateWeeklyStreak(date);
     const counterEl = document.getElementById('streak-counter-text');
     if (counterEl) counterEl.innerText = `${weeklyStreak} Hari`;

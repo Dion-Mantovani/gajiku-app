@@ -75,6 +75,34 @@ export function formatDateString(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Tanggal terakhir yang punya status nyata (bukan kosong / hari Minggu).
+ * Dipakai untuk menghitung streak dari data yang sudah diisi, termasuk
+ * tanggal ke depan yang sudah dicatat user.
+ */
+export function getLatestRecordedDate(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  let latest: string | null = null;
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key || !key.startsWith('absensi_')) continue;
+
+    const yearMonth = key.slice('absensi_'.length);
+    if (!/^\d{4}-\d{2}$/.test(yearMonth)) continue;
+
+    const record = getMonthAttendance(yearMonth);
+    for (const dateStr in record) {
+      const status = record[dateStr];
+      if (status === 'empty' || status === 'minggu') continue;
+      if (!latest || dateStr > latest) latest = dateStr;
+    }
+  }
+
+  return latest;
+}
+
 // --- ATTENDANCE ENGINE (AUTO-PRESENT WITH MUTEX SUNDAY) ---
 export function initializeAutoPresent(
   yearMonth: string,

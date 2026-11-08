@@ -8,6 +8,7 @@ import {
   Calendar as CalendarIcon,
   ChevronLeft,
   ChevronRight,
+  Eraser,
   FileText,
 } from '@lucide/astro';
 
@@ -88,28 +89,43 @@ const todayStr = formatDateString(today);
         </a>
       </div>
 
-      <!-- Navigasi bulan: link asli, JS hanya mempercepat perpindahan -->
-      <div class="flex shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/10 p-1 backdrop-blur-md">
-        <a
-          id="link-prev-month"
-          data-month-link
-          href={`/calendar?ym=${prevYM}`}
-          aria-label={`Bulan sebelumnya, ${fullMonthLabel(prevDate)}`}
-          title="Bulan Sebelumnya"
-          class="nav-btn"
-        >
-          <ChevronLeft class="w-5 h-5" />
-        </a>
-        <a
-          id="link-next-month"
-          data-month-link
-          href={`/calendar?ym=${nextYM}`}
-          aria-label={`Bulan selanjutnya, ${fullMonthLabel(nextDate)}`}
-          title="Bulan Selanjutnya"
-          class="nav-btn"
-        >
-          <ChevronRight class="w-5 h-5" />
-        </a>
+      <div class="flex flex-col items-center">
+        <!-- Navigasi bulan: link asli, JS hanya mempercepat perpindahan -->
+        <div class="flex shrink-0 justify-between rounded-2xl border border-white/10 bg-white/10 p-1 backdrop-blur-md">
+          <a
+            id="link-prev-month"
+            data-month-link
+            href={`/calendar?ym=${prevYM}`}
+            aria-label={`Bulan sebelumnya, ${fullMonthLabel(prevDate)}`}
+            title="Bulan Sebelumnya"
+            class="nav-btn"
+          >
+            <ChevronLeft class="w-5 h-5" />
+          </a>
+          <a
+            id="link-next-month"
+            data-month-link
+            href={`/calendar?ym=${nextYM}`}
+            aria-label={`Bulan selanjutnya, ${fullMonthLabel(nextDate)}`}
+            title="Bulan Selanjutnya"
+            class="nav-btn"
+          >
+            <ChevronRight class="w-5 h-5" />
+          </a>
+        </div>
+
+        <!-- Toggle mode hapus cepat -->
+        <div class="relative z-10 mt-4 flex justify-end">
+          <button
+            id="erase-mode-toggle"
+            type="button"
+            aria-pressed="false"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/10 px-2.5 py-1.5 text-[11px] font-semibold text-slate-300 backdrop-blur-md transition-colors hover:bg-white/20"
+          >
+            <Eraser class="h-3.5 w-3.5" />
+            Hapus
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -217,7 +233,10 @@ const todayStr = formatDateString(today);
         </span>
       </div>
 
-      <p class="mt-3 text-[10px] leading-relaxed text-slate-400">
+      <p
+        id="calendar-hint"
+        class="mt-3 text-[10px] leading-relaxed text-slate-400"
+      >
         Ketuk tanggal untuk mengganti status: <br />
         kosong → hadir → libur → setengah hari → izin → sakit → alpha.
       </p>
@@ -529,6 +548,28 @@ const todayStr = formatDateString(today);
   let lastChange: { dateStr: string; previous: string | undefined } | null =
     null;
 
+  let eraseMode = false;
+  const eraseToggle = document.getElementById('erase-mode-toggle');
+  const calendarHint = document.getElementById('calendar-hint');
+
+  function updateEraseModeUI() {
+    eraseToggle?.classList.toggle('border-rose-400/40', eraseMode);
+    eraseToggle?.classList.toggle('bg-rose-500/20', eraseMode);
+    eraseToggle?.classList.toggle('text-rose-200', eraseMode);
+    eraseToggle?.classList.toggle('border-white/10', !eraseMode);
+    eraseToggle?.classList.toggle('bg-white/10', !eraseMode);
+    eraseToggle?.classList.toggle('text-slate-300', !eraseMode);
+    eraseToggle?.setAttribute('aria-pressed', String(eraseMode));
+
+    if (calendarHint) {
+      calendarHint.textContent = eraseMode
+        ? 'Mode hapus aktif. Ketuk tanggal untuk mengosongkan status.'
+        : 'Ketuk tanggal untuk mengganti status: kosong → hadir → libur → setengah hari → izin → sakit → alpha.';
+      calendarHint.classList.toggle('text-rose-500', eraseMode);
+      calendarHint.classList.toggle('text-slate-400', !eraseMode);
+    }
+  }
+
   function showStatusToast(dateStr: string, status: string) {
     const toast = document.getElementById('status-toast');
     const text = document.getElementById('status-toast-text');
@@ -539,11 +580,27 @@ const todayStr = formatDateString(today);
       'id-ID',
       { weekday: 'long', day: 'numeric', month: 'short' }
     );
-    text.textContent = `${dateLabel} · ${STATUS_LABELS[status] ?? 'Kosong'}`;
+    const statusLabel =
+      status === 'empty' ? 'Dikosongkan' : (STATUS_LABELS[status] ?? 'Kosong');
+    text.textContent = `${dateLabel} · ${statusLabel}`;
 
     toast.classList.remove('hidden');
     window.clearTimeout(toastTimer);
     toastTimer = window.setTimeout(() => toast.classList.add('hidden'), 3500);
+  }
+
+  function setStatus(dateStr: string, status: string) {
+    const yearMonth = dateStr.slice(0, 7);
+    const record = getMonthAttendance(yearMonth);
+    const previous = record[dateStr];
+
+    record[dateStr] = status as any;
+    saveMonthAttendance(yearMonth, record);
+
+    lastChange = { dateStr, previous };
+    applyStatuses(yearMonth);
+    renderSlip(yearMonth);
+    showStatusToast(dateStr, status);
   }
 
   function cycleStatus(dateStr: string) {
@@ -555,13 +612,7 @@ const todayStr = formatDateString(today);
     const index = STATUS_CYCLE.indexOf(normalized as any);
     const next = STATUS_CYCLE[(index + 1) % STATUS_CYCLE.length];
 
-    record[dateStr] = next as any;
-    saveMonthAttendance(yearMonth, record);
-
-    lastChange = { dateStr, previous };
-    applyStatuses(yearMonth);
-    renderSlip(yearMonth);
-    showStatusToast(dateStr, next);
+    setStatus(dateStr, next);
   }
 
   // --- Navigasi bulan ---
@@ -600,7 +651,14 @@ const todayStr = formatDateString(today);
       'button[data-date]'
     );
     if (!target?.dataset.date) return;
-    cycleStatus(target.dataset.date);
+    if (eraseMode) setStatus(target.dataset.date, 'empty');
+    else cycleStatus(target.dataset.date);
+  });
+
+  // Toggle mode hapus cepat
+  eraseToggle?.addEventListener('click', () => {
+    eraseMode = !eraseMode;
+    updateEraseModeUI();
   });
 
   // Batalkan perubahan terakhir
@@ -634,6 +692,7 @@ const todayStr = formatDateString(today);
 
   // --- Render awal ---
   function init() {
+    updateEraseModeUI();
     const initialYM =
       parseYM(new URLSearchParams(window.location.search).get('ym')) ??
       currentMonth();
