@@ -1,0 +1,824 @@
+---
+// src/pages/calendar.astro
+import Layout from '../layouts/Layout.astro';
+import BottomNav from '../components/BottomNav.astro';
+import { formatYearMonth, formatDateString } from '../utils/storage';
+import {
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+} from '@lucide/astro';
+
+const pad2 = (value: number) => String(value).padStart(2, '0');
+
+const today = new Date();
+
+// Bulan awal dirender di server dari ?ym= (untuk refresh / buka tab baru).
+// Semua perpindahan bulan berikutnya ditangani di client karena halaman statis.
+const url = new URL(Astro.request.url);
+const queryMatch = url.searchParams.get('ym')?.match(/^(\d{4})-(\d{2})$/);
+const queryYear = queryMatch ? Number(queryMatch[1]) : NaN;
+const queryMonth = queryMatch ? Number(queryMatch[2]) - 1 : NaN;
+const isQueryValid =
+  Number.isInteger(queryYear) &&
+  queryYear >= 2000 &&
+  queryYear <= 2100 &&
+  Number.isInteger(queryMonth) &&
+  queryMonth >= 0 &&
+  queryMonth <= 11;
+
+const targetYear = isQueryValid ? queryYear : today.getFullYear();
+const targetMonth = isQueryValid ? queryMonth : today.getMonth();
+
+const currentYM = `${targetYear}-${pad2(targetMonth + 1)}`;
+
+const prevDate = new Date(targetYear, targetMonth - 1, 1);
+const nextDate = new Date(targetYear, targetMonth + 1, 1);
+const prevYM = formatYearMonth(prevDate);
+const nextYM = formatYearMonth(nextDate);
+
+const fullMonthLabel = (date: Date) =>
+  date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+const firstDayOfMonth = new Date(targetYear, targetMonth, 1);
+const totalDaysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+
+// Senin = kolom pertama (0), Minggu = kolom terakhir (6)
+const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
+const trailingBlanks = (7 - ((startDayOfWeek + totalDaysInMonth) % 7)) % 7;
+
+const monthLabel = firstDayOfMonth.toLocaleDateString('id-ID', {
+  month: 'long',
+});
+const yearLabel = String(targetYear);
+const isCurrentMonth =
+  targetYear === today.getFullYear() && targetMonth === today.getMonth();
+const todayStr = formatDateString(today);
+---
+
+<Layout title={`Kalender Absensi - ${fullMonthLabel(firstDayOfMonth)}`}>
+  <!-- TOP HEADER -->
+  <div class="app-header">
+    <div class="app-header-glow"></div>
+
+    <div class="relative z-10 flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="app-eyebrow">Riwayat & Kalender</p>
+        <h1 class="mt-1 flex items-baseline gap-2">
+          <span
+            id="month-name"
+            class="text-3xl font-extrabold tracking-tight"
+          >
+            {monthLabel}
+          </span>
+          <span
+            id="month-year"
+            class="text-sm font-bold tabular-nums text-slate-400"
+          >
+            {yearLabel}
+          </span>
+        </h1>
+        <a
+          id="link-current-month"
+          href="/calendar"
+          data-month-link
+          class={`inline-flex items-center gap-1 mt-2 text-[11px] font-semibold text-emerald-400 transition-colors hover:text-emerald-300 ${isCurrentMonth ? 'hidden' : ''}`}
+        >
+          <CalendarIcon class="w-3 h-3" />
+          Kembali ke bulan ini
+        </a>
+      </div>
+
+      <!-- Navigasi bulan: link asli, JS hanya mempercepat perpindahan -->
+      <div class="flex shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/10 p-1 backdrop-blur-md">
+        <a
+          id="link-prev-month"
+          data-month-link
+          href={`/calendar?ym=${prevYM}`}
+          aria-label={`Bulan sebelumnya, ${fullMonthLabel(prevDate)}`}
+          title="Bulan Sebelumnya"
+          class="nav-btn"
+        >
+          <ChevronLeft class="w-5 h-5" />
+        </a>
+        <a
+          id="link-next-month"
+          data-month-link
+          href={`/calendar?ym=${nextYM}`}
+          aria-label={`Bulan selanjutnya, ${fullMonthLabel(nextDate)}`}
+          title="Bulan Selanjutnya"
+          class="nav-btn"
+        >
+          <ChevronRight class="w-5 h-5" />
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CALENDAR CONTAINER -->
+  <div class="relative z-20 -mt-4 space-y-4 px-4 pb-8 sm:px-6">
+    <div class="app-card p-4 sm:p-5">
+      <!-- Day Headers (Senin s.d. Minggu) -->
+      <div class="mb-3 grid grid-cols-7 gap-x-1 border-b border-slate-100 pb-3 text-center sm:gap-x-2">
+        <span class="text-[11px] font-bold text-slate-400">Sen</span>
+        <span class="text-[11px] font-bold text-slate-400">Sel</span>
+        <span class="text-[11px] font-bold text-slate-400">Rab</span>
+        <span class="text-[11px] font-bold text-slate-400">Kam</span>
+        <span class="text-[11px] font-bold text-slate-400">Jum</span>
+        <span class="text-[11px] font-bold text-slate-400">Sab</span>
+        <span class="text-[11px] font-bold text-rose-500">Min</span>
+      </div>
+
+      <!-- Calendar Grid -->
+      <div
+        id="calendar-grid"
+        class="grid select-none grid-cols-7 gap-x-1 gap-y-2 sm:gap-x-2"
+        data-ym={currentYM}
+      >
+        <!-- Slot kosong di awal bulan (Senin = kolom pertama) -->
+        {Array.from({ length: startDayOfWeek }).map(() => (
+          <div class="flex flex-col items-center" aria-hidden="true">
+            <div class="w-full max-w-[2.75rem] sm:max-w-[3rem] aspect-square"></div>
+            <span class="mt-1 h-3"></span>
+          </div>
+        ))}
+
+        <!-- Tanggal 1 sampai akhir bulan -->
+        {Array.from({ length: totalDaysInMonth }).map((_, index) => {
+          const dayNum = index + 1;
+          const dateStr = `${currentYM}-${pad2(dayNum)}`;
+          const isToday = dateStr === todayStr;
+          const isSunday = new Date(targetYear, targetMonth, dayNum).getDay() === 0;
+          const fullDateLabel = new Date(
+            targetYear,
+            targetMonth,
+            dayNum
+          ).toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+
+          return (
+            <div class="flex flex-col items-center">
+              <button
+                type="button"
+                id={`cal-day-${dateStr}`}
+                data-date={isSunday ? undefined : dateStr}
+                disabled={isSunday}
+                aria-disabled={isSunday ? 'true' : undefined}
+                title={isSunday ? 'Hari Minggu' : undefined}
+                aria-label={isSunday ? `${fullDateLabel}, Minggu` : fullDateLabel}
+                class={`w-full max-w-[2.75rem] sm:max-w-[3rem] aspect-square rounded-full border-2 flex items-center justify-center transition-all relative text-xs tabular-nums font-bold focus-visible:outline-none ${
+                  isSunday
+                    ? 'cursor-default border-rose-200 bg-rose-50 text-rose-600'
+                    : 'cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 border-dashed border-slate-300 bg-transparent text-slate-400'
+                } ${isToday ? 'ring-2 ring-offset-1 ring-emerald-500' : ''}`}
+              >
+                {dayNum}
+              </button>
+              <span
+                class="mt-1 h-3 text-[9px] font-black uppercase leading-none tracking-tighter text-slate-400"
+                id={`status-label-${dateStr}`}
+              ></span>
+            </div>
+          );
+        })}
+
+        <!-- Slot kosong penutup agar baris terakhir tetap penuh -->
+        {Array.from({ length: trailingBlanks }).map(() => (
+          <div class="flex flex-col items-center" aria-hidden="true">
+            <div class="w-full max-w-[2.75rem] sm:max-w-[3rem] aspect-square"></div>
+            <span class="mt-1 h-3"></span>
+          </div>
+        ))}
+      </div>
+
+      <!-- Legend Keterangan Warna -->
+      <div class="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-4 text-[11px] font-medium text-slate-500">
+        <span class="inline-flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-emerald-500"></span> Hadir
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-indigo-500"></span> Libur
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-amber-500"></span> Tidak hadir
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full bg-rose-500"></span> Minggu
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+          <span class="h-2 w-2 rounded-full border border-dashed border-slate-400"></span>
+          Mendatang
+        </span>
+      </div>
+
+      <p class="mt-3 text-[10px] leading-relaxed text-slate-400">
+        Ketuk tanggal untuk mengganti status: kosong → hadir → libur → izin →
+        sakit → alpha.
+      </p>
+    </div>
+
+    <!-- Aksi utama halaman -->
+    <button id="btn-open-slip-cal" type="button" class="btn-primary w-full">
+      <FileText class="w-5 h-5" />
+      Lihat Slip Gaji Bulanan
+    </button>
+  </div>
+
+  <!-- TOAST PERUBAHAN STATUS -->
+  <div
+    id="status-toast"
+    class="pointer-events-none fixed inset-x-0 bottom-24 z-[60] mx-auto hidden w-full max-w-md px-4"
+    role="status"
+    aria-live="polite"
+  >
+    <div class="pointer-events-auto flex items-center justify-between gap-3 rounded-2xl bg-slate-900 px-4 py-3 text-white shadow-2xl">
+      <p id="status-toast-text" class="truncate text-xs font-semibold">
+        Status diubah
+      </p>
+      <button
+        id="status-toast-undo"
+        type="button"
+        class="shrink-0 rounded-xl bg-white/15 px-3 py-1.5 text-xs font-bold text-white transition-colors hover:bg-white/25"
+      >
+        Batalkan
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL SLIP GAJI BULANAN (gaya sama dengan dashboard) -->
+  <div id="slip-modal-cal" class="modal-backdrop hidden">
+    <div
+      class="modal-panel max-h-[85vh] max-w-sm overflow-y-auto sm:max-h-[90vh]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Slip gaji bulanan"
+    >
+      <div class="border-b border-dashed border-slate-300 pb-5 text-center">
+        <div class="mb-2 inline-flex rounded-2xl border border-emerald-100 bg-emerald-50 p-2.5 text-emerald-600">
+          <FileText class="w-6 h-6" />
+        </div>
+        <h3 class="text-lg font-black uppercase tracking-tight text-slate-800">
+          Slip Gaji Karyawan
+        </h3>
+        <p
+          id="cal-slip-periode"
+          class="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+        >
+          PERIODE: {currentYM}
+        </p>
+      </div>
+
+      <div class="space-y-2 border-b border-dashed border-slate-300 py-4 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="font-medium text-slate-400">Nama Karyawan</span>
+          <span class="font-bold text-slate-800" id="cal-slip-name">—</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="font-medium text-slate-400">Rate / Hari Kerja</span>
+          <span class="font-bold tabular-nums text-slate-700" id="cal-slip-rate">
+            Rp 0
+          </span>
+        </div>
+      </div>
+
+      <div class="space-y-3 border-b border-dashed border-slate-300 py-4 text-xs">
+        <p class="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
+          Rincian Pendapatan
+        </p>
+
+        <div class="flex items-center justify-between">
+          <span class="font-medium text-slate-600">Kehadiran Kerja</span>
+          <span
+            class="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 font-bold tabular-nums text-emerald-600"
+            id="cal-slip-hadir"
+          >
+            0 / 0 Hari
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <span class="font-medium text-slate-600">
+            Gaji Pokok Terakumulasi
+          </span>
+          <span
+            class="font-bold tabular-nums text-slate-800"
+            id="cal-slip-base-salary"
+          >
+            Rp 0
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex flex-col">
+            <span class="font-medium text-slate-600">Tambahan Sabtu</span>
+            <span class="text-[10px] text-slate-400" id="cal-slip-saturday-count">
+              0 × Rp 10.000
+            </span>
+          </div>
+          <span
+            class="font-bold tabular-nums text-slate-800"
+            id="cal-slip-saturday-bonus"
+          >
+            Rp 0
+          </span>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1">
+            <span class="font-medium text-slate-600">Bonus Kehadiran</span>
+            <span
+              id="cal-slip-bonus-badge"
+              class="rounded px-1.5 py-0.5 text-[9px] font-black uppercase"
+            ></span>
+          </div>
+          <span class="font-bold tabular-nums" id="cal-slip-bonus-amount">
+            Rp 0
+          </span>
+        </div>
+      </div>
+
+      <div class="pt-4 pb-2">
+        <div class="space-y-1 rounded-2xl bg-slate-900 p-4 text-white">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Total Take Home Pay
+          </p>
+          <div class="flex items-baseline justify-between">
+            <span class="text-xs font-medium text-slate-300">
+              Estimasi Bersih
+            </span>
+            <span
+              class="text-xl font-black tabular-nums text-emerald-400"
+              id="cal-slip-total-estimated"
+            >
+              Rp 0
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <button
+        id="btn-close-slip-cal"
+        type="button"
+        class="btn-ghost mt-3 w-full"
+      >
+        Tutup Slip Gaji
+      </button>
+    </div>
+  </div>
+
+  <slot name="nav">
+    <BottomNav activePath="calendar" />
+  </slot>
+</Layout>
+
+<script>
+  import {
+    getSettings,
+    getMonthAttendance,
+    saveMonthAttendance,
+    formatDateString,
+    formatYearMonth,
+    initializeAutoPresent,
+    calculateSalary,
+  } from '../utils/storage';
+
+  const STATUS_LABELS: Record<string, string> = {
+    hadir: 'Hadir',
+    sakit: 'Sakit',
+    izin: 'Izin',
+    alpha: 'Alpha',
+    libur_perusahaan: 'Libur',
+    tanggal_merah: 'Libur',
+    minggu: 'Minggu',
+    empty: 'Belum ada status',
+  };
+
+  const DAY_BASE =
+    'w-full max-w-[2.75rem] sm:max-w-[3rem] aspect-square rounded-full border-2 flex items-center justify-center transition-all relative text-xs tabular-nums font-bold focus-visible:outline-none';
+  const DAY_INTERACTIVE =
+    'cursor-pointer active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2';
+
+  // Urutan siklus saat tanggal diketuk
+  const STATUS_CYCLE = [
+    'empty',
+    'hadir',
+    'libur_perusahaan',
+    'izin',
+    'sakit',
+    'alpha',
+  ] as const;
+
+  const pad2 = (value: number) => String(value).padStart(2, '0');
+
+  const gridEl = document.getElementById('calendar-grid');
+  const monthNameEl = document.getElementById('month-name');
+  const monthYearEl = document.getElementById('month-year');
+  const prevLink = document.getElementById(
+    'link-prev-month'
+  ) as HTMLAnchorElement | null;
+  const nextLink = document.getElementById(
+    'link-next-month'
+  ) as HTMLAnchorElement | null;
+  const currentLink = document.getElementById('link-current-month');
+  const slipModal = document.getElementById('slip-modal-cal');
+
+  function parseYM(value: string | null | undefined): string | null {
+    const match = value?.match(/^(\d{4})-(\d{2})$/);
+    if (!match) return null;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    if (year < 2000 || year > 2100 || month < 1 || month > 12) return null;
+    return `${year}-${pad2(month)}`;
+  }
+
+  function shiftMonth(ym: string, delta: number): string {
+    const [year, month] = ym.split('-').map(Number);
+    const date = new Date(year, month - 1 + delta, 1);
+    return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}`;
+  }
+
+  function monthLabelOf(ym: string): string {
+    const [year, month] = ym.split('-').map(Number);
+    return new Date(year, month - 1, 1).toLocaleDateString('id-ID', {
+      month: 'long',
+    });
+  }
+
+  const currentMonth = () => formatYearMonth(new Date());
+
+  function setText(id: string, text: string) {
+    const element = document.getElementById(id);
+    if (element) element.textContent = text;
+  }
+
+  function createBlankCell(): HTMLElement {
+    const cell = document.createElement('div');
+    cell.className = 'flex flex-col items-center';
+    cell.setAttribute('aria-hidden', 'true');
+    cell.innerHTML =
+      '<div class="w-full max-w-[2.75rem] sm:max-w-[3rem] aspect-square"></div>' +
+      '<span class="mt-1 h-3"></span>';
+    return cell;
+  }
+
+  function createDayCell(ym: string, day: number, isSunday: boolean): HTMLElement {
+    const dateStr = `${ym}-${pad2(day)}`;
+
+    const cell = document.createElement('div');
+    cell.className = 'flex flex-col items-center';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.id = `cal-day-${dateStr}`;
+    button.className = `${DAY_BASE} ${isSunday ? 'cursor-default' : DAY_INTERACTIVE}`;
+    button.textContent = String(day);
+
+    if (isSunday) {
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+      button.title = 'Hari Minggu';
+    } else {
+      button.dataset.date = dateStr;
+    }
+
+    const label = document.createElement('span');
+    label.id = `status-label-${dateStr}`;
+    label.className =
+      'mt-1 h-3 text-[9px] font-black uppercase leading-none tracking-tighter text-slate-400';
+
+    cell.append(button, label);
+    return cell;
+  }
+
+  function renderGrid(ym: string) {
+    if (!gridEl) return;
+
+    const [year, month] = ym.split('-').map(Number);
+    const firstDay = new Date(year, month - 1, 1);
+    const totalDays = new Date(year, month, 0).getDate();
+    const startOffset = (firstDay.getDay() + 6) % 7;
+    const trailing = (7 - ((startOffset + totalDays) % 7)) % 7;
+
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < startOffset; i++) fragment.append(createBlankCell());
+    for (let day = 1; day <= totalDays; day++) {
+      const dayOfWeek = new Date(year, month - 1, day).getDay();
+      fragment.append(createDayCell(ym, day, dayOfWeek === 0));
+    }
+    for (let i = 0; i < trailing; i++) fragment.append(createBlankCell());
+
+    gridEl.replaceChildren(fragment);
+    gridEl.dataset.ym = ym;
+  }
+
+  function applyStatuses(ym: string) {
+    const record = getMonthAttendance(ym);
+    const todayStr = formatDateString(new Date());
+    const [year, month] = ym.split('-').map(Number);
+    const totalDays = new Date(year, month, 0).getDate();
+
+    for (let day = 1; day <= totalDays; day++) {
+      const dateStr = `${ym}-${pad2(day)}`;
+      const button = document.getElementById(`cal-day-${dateStr}`);
+      const label = document.getElementById(`status-label-${dateStr}`);
+      if (!button || !label) continue;
+
+      const dateObj = new Date(year, month - 1, day);
+      const isSunday = dateObj.getDay() === 0;
+      const isToday = dateStr === todayStr;
+      const status = record[dateStr] ?? 'empty';
+
+      let circleStyle =
+        'border-dashed border-slate-300 bg-transparent text-slate-400';
+      let labelText = '';
+      let labelColor = 'text-slate-400';
+
+      if (isSunday) {
+        circleStyle = 'border-rose-200 bg-rose-50 text-rose-600';
+      } else if (status === 'hadir') {
+        circleStyle = 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      } else if (status === 'libur_perusahaan' || status === 'tanggal_merah') {
+        circleStyle = 'border-indigo-200 bg-indigo-50 text-indigo-700';
+        labelText = 'Libur';
+        labelColor = 'text-indigo-500';
+      } else if (status === 'sakit' || status === 'izin' || status === 'alpha') {
+        circleStyle =
+          status === 'alpha'
+            ? 'border-amber-300 bg-amber-50 text-amber-900'
+            : 'border-amber-200 bg-amber-50 text-amber-800';
+        labelText = STATUS_LABELS[status] ?? '';
+        labelColor = 'text-amber-600';
+      }
+
+      const todayRing = isToday
+        ? 'ring-2 ring-offset-1 ring-emerald-500'
+        : '';
+      const interactive = isSunday ? 'cursor-default' : DAY_INTERACTIVE;
+      button.className = `${DAY_BASE} ${interactive} ${todayRing} ${circleStyle}`;
+      button.classList.toggle('ring-emerald-500', isToday);
+      label.className = `mt-1 h-3 text-[9px] font-black uppercase leading-none tracking-tighter ${labelColor}`;
+      label.textContent = labelText;
+
+      const readableDate = dateObj.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      const normalizedStatus =
+        status === 'tanggal_merah' ? 'libur_perusahaan' : status;
+      const nextStatus =
+        STATUS_CYCLE[
+          (STATUS_CYCLE.indexOf(normalizedStatus as any) + 1) %
+            STATUS_CYCLE.length
+        ];
+      const readableStatus = isSunday
+        ? 'Minggu'
+        : (STATUS_LABELS[status] ?? 'Belum ada status');
+      button.setAttribute(
+        'aria-label',
+        isSunday
+          ? `${readableDate} - Minggu`
+          : `${readableDate} - ${readableStatus}. Ketuk untuk ubah ke ${
+              STATUS_LABELS[nextStatus] ?? 'Kosong'
+            }`
+      );
+    }
+  }
+
+  function updateNavigation(ym: string) {
+    const monthName = monthLabelOf(ym);
+    const year = ym.slice(0, 4);
+    if (monthNameEl) monthNameEl.textContent = monthName;
+    if (monthYearEl) monthYearEl.textContent = year;
+    document.title = `Kalender Absensi - ${monthName} ${year}`;
+
+    const previousYM = shiftMonth(ym, -1);
+    const followingYM = shiftMonth(ym, 1);
+
+    if (prevLink) {
+      prevLink.href = `/calendar?ym=${previousYM}`;
+      prevLink.setAttribute(
+        'aria-label',
+        `Bulan sebelumnya, ${monthLabelOf(previousYM)} ${previousYM.slice(0, 4)}`
+      );
+    }
+    if (nextLink) {
+      nextLink.href = `/calendar?ym=${followingYM}`;
+      nextLink.setAttribute(
+        'aria-label',
+        `Bulan selanjutnya, ${monthLabelOf(followingYM)} ${followingYM.slice(0, 4)}`
+      );
+    }
+    currentLink?.classList.toggle('hidden', ym === currentMonth());
+  }
+
+  function updateSlip(ym: string) {
+    const settings = getSettings();
+    const salary = calculateSalary(ym);
+
+    setText('cal-slip-periode', `PERIODE: ${ym}`);
+    setText('cal-slip-name', settings.name || 'Belum diatur');
+    setText(
+      'cal-slip-rate',
+      `Rp ${settings.dailySalary.toLocaleString('id-ID')}`
+    );
+    setText(
+      'cal-slip-hadir',
+      `${salary.totalHadir} / ${salary.totalWorkingDaysInMonth} Hari`
+    );
+    setText(
+      'cal-slip-base-salary',
+      `Rp ${salary.baseSalary.toLocaleString('id-ID')}`
+    );
+    setText(
+      'cal-slip-saturday-count',
+      `${salary.totalHadirSabtu} × Rp ${settings.saturdayBonus.toLocaleString('id-ID')}`
+    );
+    setText(
+      'cal-slip-saturday-bonus',
+      `Rp ${salary.saturdayBonus.toLocaleString('id-ID')}`
+    );
+    setText(
+      'cal-slip-bonus-amount',
+      `Rp ${salary.bonusAmount.toLocaleString('id-ID')}`
+    );
+    setText(
+      'cal-slip-total-estimated',
+      `Rp ${salary.totalEstimated.toLocaleString('id-ID')}`
+    );
+
+    const badge = document.getElementById('cal-slip-bonus-badge');
+    const amount = document.getElementById('cal-slip-bonus-amount');
+    if (badge && amount) {
+      if (salary.bonusEligible) {
+        badge.textContent = 'Cair';
+        badge.className =
+          'rounded px-1.5 py-0.5 text-[9px] font-black uppercase bg-emerald-100 text-emerald-700';
+        amount.className = 'font-bold tabular-nums text-emerald-600';
+      } else {
+        badge.textContent = 'Hangus';
+        badge.className =
+          'rounded px-1.5 py-0.5 text-[9px] font-black uppercase bg-rose-100 text-rose-700';
+        amount.className =
+          'font-bold tabular-nums text-slate-400 line-through';
+      }
+    }
+  }
+
+  function showMonth(ym: string) {
+    // Auto-present hanya untuk bulan berjalan; bulan lampau tampil apa adanya.
+    if (ym === currentMonth()) {
+      initializeAutoPresent(ym, getSettings().workDaysPerWeek);
+    }
+
+    renderGrid(ym);
+    applyStatuses(ym);
+    updateNavigation(ym);
+    updateSlip(ym);
+  }
+
+  function navigateTo(ym: string) {
+    const nextUrl = ym === currentMonth() ? '/calendar' : `/calendar?ym=${ym}`;
+    window.history.pushState({ ym }, '', nextUrl);
+    showMonth(ym);
+  }
+
+  let toastTimer: number | undefined;
+  let lastChange: { dateStr: string; previous: string | undefined } | null =
+    null;
+
+  function showStatusToast(dateStr: string, status: string) {
+    const toast = document.getElementById('status-toast');
+    const text = document.getElementById('status-toast-text');
+    if (!toast || !text) return;
+
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const dateLabel = new Date(year, month - 1, day).toLocaleDateString(
+      'id-ID',
+      { weekday: 'long', day: 'numeric', month: 'short' }
+    );
+    text.textContent = `${dateLabel} · ${STATUS_LABELS[status] ?? 'Kosong'}`;
+
+    toast.classList.remove('hidden');
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => toast.classList.add('hidden'), 3500);
+  }
+
+  function cycleStatus(dateStr: string) {
+    const yearMonth = dateStr.slice(0, 7);
+    const record = getMonthAttendance(yearMonth);
+    const previous = record[dateStr];
+    const normalized =
+      previous === 'tanggal_merah'
+        ? 'libur_perusahaan'
+        : (previous ?? 'empty');
+    const index = STATUS_CYCLE.indexOf(normalized as any);
+    const next = STATUS_CYCLE[(index + 1) % STATUS_CYCLE.length];
+
+    record[dateStr] = next as any;
+    saveMonthAttendance(yearMonth, record);
+
+    lastChange = { dateStr, previous };
+    applyStatuses(yearMonth);
+    updateSlip(yearMonth);
+    showStatusToast(dateStr, next);
+  }
+
+  // --- Navigasi bulan ---
+  document
+    .querySelectorAll<HTMLAnchorElement>('a[data-month-link]')
+    .forEach((link) => {
+      link.addEventListener('click', (event) => {
+        if (
+          event.defaultPrevented ||
+          event.button !== 0 ||
+          event.metaKey ||
+          event.ctrlKey ||
+          event.shiftKey ||
+          event.altKey
+        ) {
+          return;
+        }
+        event.preventDefault();
+
+        const targetYM =
+          parseYM(new URL(link.href).searchParams.get('ym')) ?? currentMonth();
+        navigateTo(targetYM);
+      });
+    });
+
+  window.addEventListener('popstate', () => {
+    const targetYM =
+      parseYM(new URLSearchParams(window.location.search).get('ym')) ??
+      currentMonth();
+    showMonth(targetYM);
+  });
+
+  // --- Interaksi tanggal: ketuk untuk ganti status ---
+  gridEl?.addEventListener('click', (event) => {
+    const target = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      'button[data-date]'
+    );
+    if (!target?.dataset.date) return;
+    cycleStatus(target.dataset.date);
+  });
+
+  // Batalkan perubahan terakhir
+  document
+    .getElementById('status-toast-undo')
+    ?.addEventListener('click', () => {
+      if (!lastChange) return;
+
+      const { dateStr, previous } = lastChange;
+      const yearMonth = dateStr.slice(0, 7);
+      const record = getMonthAttendance(yearMonth);
+
+      if (previous) record[dateStr] = previous as any;
+      else record[dateStr] = 'empty';
+
+      saveMonthAttendance(yearMonth, record);
+      lastChange = null;
+
+      applyStatuses(yearMonth);
+      updateSlip(yearMonth);
+
+      document.getElementById('status-toast')?.classList.add('hidden');
+      window.clearTimeout(toastTimer);
+    });
+
+  // --- Modal slip ---
+  document
+    .getElementById('btn-open-slip-cal')
+    ?.addEventListener('click', () => slipModal?.classList.remove('hidden'));
+  document
+    .getElementById('btn-close-slip-cal')
+    ?.addEventListener('click', () => slipModal?.classList.add('hidden'));
+
+  // Tutup slip lewat klik backdrop atau tombol Escape
+  slipModal?.addEventListener('click', (event) => {
+    if (event.target === slipModal) slipModal.classList.add('hidden');
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') slipModal?.classList.add('hidden');
+  });
+
+  // --- Render awal ---
+  function init() {
+    const initialYM =
+      parseYM(new URLSearchParams(window.location.search).get('ym')) ??
+      currentMonth();
+    showMonth(initialYM);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>

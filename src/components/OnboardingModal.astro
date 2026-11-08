@@ -1,0 +1,240 @@
+---
+// src/components/OnboardingModal.astro
+---
+
+<div id="onboarding-modal" class="modal-backdrop hidden">
+  <div
+    class="modal-panel"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Pengaturan awal"
+  >
+    <!-- Header / Progress -->
+    <div class="flex justify-between items-center mb-6">
+      <div class="flex gap-1.5 flex-1 max-w-[120px]">
+        <div
+          id="step-indicator-1"
+          class="h-1.5 flex-1 rounded-full bg-emerald-500 transition-colors"
+        ></div>
+        <div
+          id="step-indicator-2"
+          class="h-1.5 flex-1 rounded-full bg-slate-200 transition-colors"
+        ></div>
+        <div
+          id="step-indicator-3"
+          class="h-1.5 flex-1 rounded-full bg-slate-200 transition-colors"
+        ></div>
+      </div>
+      <span
+        id="step-counter"
+        class="text-xs font-semibold text-slate-400 tabular-nums"
+      >
+        Step 1 dari 3
+      </span>
+    </div>
+
+    <!-- Form Container -->
+    <form id="onboarding-form">
+      <!-- STEP 1: Nama User -->
+      <div id="onboarding-step-1" class="space-y-4">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">
+            Kenalan dulu, Bro! 👋
+          </h2>
+          <p class="text-sm text-slate-500 mt-1">
+            Masukkan nama panggilan lu untuk sapaan interaktif di dashboard.
+          </p>
+        </div>
+        <div>
+          <label class="field-label" for="input-name">Nama Panggilan</label>
+          <input
+            type="text"
+            id="input-name"
+            required
+            placeholder="Contoh: Dion"
+            class="field-input"
+          />
+        </div>
+        <button
+          type="button"
+          id="btn-next-1"
+          class="btn-primary mt-4 w-full"
+        >
+          Lanjut
+        </button>
+      </div>
+
+      <!-- STEP 2: Gaji Harian -->
+      <div id="onboarding-step-2" class="space-y-4 hidden">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">Rate Gaji Harian 💰</h2>
+          <p class="text-sm text-slate-500 mt-1">
+            Tentukan estimasi pendapatan harian lu (default Rp 80.000).
+          </p>
+        </div>
+        <div>
+          <label class="field-label" for="input-salary">
+            Rate Gaji Harian (Rp)
+          </label>
+          <input
+            type="number"
+            id="input-salary"
+            value="80000"
+            required
+            class="field-input tabular-nums"
+          />
+        </div>
+        <div class="flex gap-3 mt-4">
+          <button type="button" id="btn-back-2" class="btn-ghost w-1/3">
+            Kembali
+          </button>
+          <button type="button" id="btn-next-2" class="btn-primary w-2/3">
+            Lanjut
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: Hari Kerja & Bonus -->
+      <div id="onboarding-step-3" class="space-y-4 hidden">
+        <div>
+          <h2 class="text-xl font-bold text-slate-800">
+            Bonus & Hari Kerja 🚀
+          </h2>
+          <p class="text-sm text-slate-500 mt-1">
+            Atur bonus kehadiran penuh dan jumlah hari kerja per minggu.
+          </p>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="field-label" for="input-bonus">
+              Bonus Kehadiran Penuh (Rp)
+            </label>
+            <input
+              type="number"
+              id="input-bonus"
+              value="200000"
+              required
+              class="field-input tabular-nums"
+            />
+          </div>
+          <div>
+            <label class="field-label" for="input-workdays">
+              Hari Kerja / Minggu
+            </label>
+            <select id="input-workdays" class="field-input">
+              <option value="6">6 Hari (Senin - Sabtu)</option>
+              <option value="5">5 Hari (Senin - Jumat)</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex gap-3 mt-4">
+          <button type="button" id="btn-back-3" class="btn-ghost w-1/3">
+            Kembali
+          </button>
+          <button type="submit" class="btn-primary w-2/3">
+            Mulai Aplikasi
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  import { getSettings, saveSettings } from '../utils/storage';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const settings = getSettings();
+    const modal = document.getElementById('onboarding-modal');
+
+    // Jika belum onboarding, tampilkan modal
+    if (!settings.isOnboarded && modal) {
+      modal.classList.remove('hidden');
+    }
+
+    // Step navigation elements
+    let currentStep = 1;
+    const step1 = document.getElementById('onboarding-step-1');
+    const step2 = document.getElementById('onboarding-step-2');
+    const step3 = document.getElementById('onboarding-step-3');
+
+    const ind1 = document.getElementById('step-indicator-1');
+    const ind2 = document.getElementById('step-indicator-2');
+    const ind3 = document.getElementById('step-indicator-3');
+    const counter = document.getElementById('step-counter');
+
+    const inputName = document.getElementById('input-name') as HTMLInputElement;
+    const inputSalary = document.getElementById(
+      'input-salary'
+    ) as HTMLInputElement;
+    const inputBonus = document.getElementById(
+      'input-bonus'
+    ) as HTMLInputElement;
+    const inputWorkDays = document.getElementById(
+      'input-workdays'
+    ) as HTMLSelectElement;
+
+    // Button Next 1
+    document.getElementById('btn-next-1')?.addEventListener('click', () => {
+      if (!inputName || !inputName.value.trim()) {
+        alert('Masukkan nama panggilan lu dulu ya, Bro!');
+        inputName?.focus();
+        return;
+      }
+      currentStep = 2;
+      updateSteps();
+    });
+
+    // Button Back 2
+    document.getElementById('btn-back-2')?.addEventListener('click', () => {
+      currentStep = 1;
+      updateSteps();
+    });
+
+    // Button Next 2
+    document.getElementById('btn-next-2')?.addEventListener('click', () => {
+      currentStep = 3;
+      updateSteps();
+    });
+
+    // Button Back 3
+    document.getElementById('btn-back-3')?.addEventListener('click', () => {
+      currentStep = 2;
+      updateSteps();
+    });
+
+    function updateSteps() {
+      step1?.classList.toggle('hidden', currentStep !== 1);
+      step2?.classList.toggle('hidden', currentStep !== 2);
+      step3?.classList.toggle('hidden', currentStep !== 3);
+
+      if (counter) counter.innerText = `Step ${currentStep} dari 3`;
+
+      // Indicators
+      if (ind1 && ind2 && ind3) {
+        ind1.className = `h-1.5 flex-1 rounded-full transition-colors ${currentStep >= 1 ? 'bg-emerald-500' : 'bg-slate-200'}`;
+        ind2.className = `h-1.5 flex-1 rounded-full transition-colors ${currentStep >= 2 ? 'bg-emerald-500' : 'bg-slate-200'}`;
+        ind3.className = `h-1.5 flex-1 rounded-full transition-colors ${currentStep >= 3 ? 'bg-emerald-500' : 'bg-slate-200'}`;
+      }
+    }
+
+    // Submit Form
+    const form = document.getElementById('onboarding-form');
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const newSettings = {
+        ...getSettings(),
+        name: inputName.value.trim(),
+        dailySalary: parseFloat(inputSalary.value) || 80000,
+        attendanceBonus: parseFloat(inputBonus.value) || 200000,
+        workDaysPerWeek: parseInt(inputWorkDays.value) || 6,
+        isOnboarded: true,
+      };
+
+      saveSettings(newSettings);
+      modal?.classList.add('hidden');
+      window.location.reload();
+    });
+  });
+</script>

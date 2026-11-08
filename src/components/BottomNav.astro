@@ -1,0 +1,40 @@
+---
+// src/components/BottomNav.astro
+import { Home, Calendar, Settings as SettingsIcon } from '@lucide/astro';
+
+interface Props {
+  activePath: 'dashboard' | 'calendar' | 'settings';
+}
+
+const { activePath } = Astro.props;
+---
+
+<!-- Menggunakan fixed bottom-0 left-0 right-0 agar menempel sempurna di bawah layar HP -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-around items-center z-50 shadow-lg max-w-md mx-auto">
+  <!-- Dashboard Link -->
+  <a
+    href="/"
+    class={`flex flex-col items-center gap-1 transition-all ${activePath === 'dashboard' ? 'text-emerald-600 font-semibold scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+  >
+    <Home class="w-6 h-6" />
+    <span class="text-xs">Dashboard</span>
+  </a>
+
+  <!-- Calendar Link -->
+  <a
+    href="/calendar"
+    class={`flex flex-col items-center gap-1 transition-all ${activePath === 'calendar' ? 'text-emerald-600 font-semibold scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+  >
+    <Calendar class="w-6 h-6" />
+    <span class="text-xs">Kalender</span>
+  </a>
+
+  <!-- Settings Link -->
+  <a
+    href="/settings"
+    class={`flex flex-col items-center gap-1 transition-all ${activePath === 'settings' ? 'text-emerald-600 font-semibold scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+  >
+    <SettingsIcon class="w-6 h-6" />
+    <span class="text-xs">Pengaturan</span>
+  </a>
+</nav>

@@ -1,16 +1,944 @@
 ---
+// src/pages/index.astro
+import Layout from '../layouts/Layout.astro';
+import BottomNav from '../components/BottomNav.astro';
+import OnboardingModal from '../components/OnboardingModal.astro';
+import {
+  getSettings,
+  formatYearMonth,
+  initializeAutoPresent,
+  calculateSalary,
+  getMonthAttendance,
+  formatDateString,
+  updateHighestStreak,
+} from '../utils/storage';
+import {
+  Flame,
+  Calendar as CalendarIcon,
+  FileText,
+  ChevronDown,
+} from '@lucide/astro';
+
+const settings = getSettings();
+const today = new Date();
+const currentYM = formatYearMonth(today);
+
+// Jalankan Auto-Present awal
+initializeAutoPresent(currentYM, settings.workDaysPerWeek, today);
+
+const formattedDateToday = today.toLocaleDateString('id-ID', {
+  weekday: 'long',
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+const todayStr = formatDateString(today);
+
+const attendanceRecord = getMonthAttendance(currentYM);
+const salarySummary = calculateSalary(currentYM);
+
+// Hitung streak global awal
+let currentStreak = 0;
+let checkDate = new Date(today);
+while (true) {
+  const dStr = formatDateString(checkDate);
+  const status = attendanceRecord[dStr];
+  const isSundayDate = checkDate.getDay() === 0;
+
+  if (status === 'hadir' && !isSundayDate) {
+    currentStreak++;
+    checkDate.setDate(checkDate.getDate() - 1);
+  } else if (
+    status === 'libur_perusahaan' ||
+    status === 'tanggal_merah' ||
+    isSundayDate
+  ) {
+    checkDate.setDate(checkDate.getDate() - 1);
+  } else {
+    break;
+  }
+}
+
+// Simpan/Perbarui rekor tertinggi global
+const highestStreakRecord = updateHighestStreak(currentStreak);
+
+const totalTidakHadir =
+  salarySummary.totalSakit + salarySummary.totalIzin + salarySummary.totalAlpha;
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<Layout title="Dashboard Absensi & Gaji">
+  <OnboardingModal />
+
+  <!-- TOP HEADER & GREETING -->
+  <div class="app-header">
+    <div class="app-header-glow"></div>
+
+    <div class="relative z-10 mb-6 flex items-start justify-between">
+      <div>
+        <p id="greeting-text" class="text-sm font-medium text-slate-400">
+          Selamat Pagi,
+        </p>
+        <h1 class="app-title" id="header-username">
+          {settings.name || 'Teman Kerja'} 👋
+        </h1>
+      </div>
+      <div
+        class="bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-xs font-semibold tabular-nums text-emerald-400"
+        id="live-clock"
+      >
+        00:00:00
+      </div>
+    </div>
+
+    <!-- Date & Streak Global Badge (Personal Best) -->
+    <div class="flex items-center justify-between bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10 relative z-10">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-emerald-500/20 text-emerald-400 rounded-xl">
+          <CalendarIcon class="w-5 h-5" />
+        </div>
+        <div>
+          <p class="text-xs text-slate-400 font-medium">Hari Ini</p>
+          <p class="text-sm font-bold text-slate-200" id="header-date-display">
+            {formattedDateToday}
+          </p>
+        </div>
+      </div>
+
+      <!-- Badge Streak Global (Rekor Tertinggi) -->
+      <div class="flex items-center gap-2 bg-amber-500/20 border border-amber-500/30 px-3.5 py-1.5 rounded-full text-amber-300 font-bold text-xs">
+        <Flame class="w-4 h-4 fill-amber-400 text-amber-500 animate-pulse" />
+        <div class="flex flex-col leading-tight">
+          <span class="text-[9px] font-semibold text-amber-400/80 tracking-wider uppercase">
+            Tertinggi
+          </span>
+          <span class="tabular-nums" id="header-streak-badge">
+            {highestStreakRecord} Hari
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <div class="relative z-20 -mt-4 space-y-4 px-4 pb-8 sm:px-6">
+    <!-- REKAP KEHADIRAN (3 KOLOM RINGKAS) & SLIP GAJI -->
+    <div class="space-y-3">
+      <div class="grid grid-cols-3 gap-2.5">
+        <div class="app-card-tight flex flex-col justify-between p-3.5">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Total Hadir
+          </p>
+          <h2
+            class="text-lg font-extrabold text-emerald-600 tabular-nums mt-2"
+            id="rekap-hadir"
+          >
+            <span id="rekap-hadir-value">{salarySummary.totalHadir}</span>{' '}
+            <span class="text-xs font-bold text-slate-400">Hari</span>
+          </h2>
+        </div>
+
+        <div class="app-card-tight flex flex-col justify-between p-3.5">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Libur
+          </p>
+          <h2
+            class="text-lg font-extrabold text-indigo-600 tabular-nums mt-2"
+            id="rekap-libur"
+          >
+            <span id="rekap-libur-value">{salarySummary.totalLibur}</span>{' '}
+            <span class="text-xs font-bold text-slate-400">Hari</span>
+          </h2>
+        </div>
+
+        <div class="app-card-tight flex flex-col justify-between p-3.5">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Tidak Hadir
+          </p>
+          <h2
+            class="text-lg font-extrabold text-amber-600 tabular-nums mt-2"
+            id="rekap-tidak-hadir"
+          >
+            <span id="rekap-tidak-hadir-value">{totalTidakHadir}</span>{' '}
+            <span class="text-xs font-bold text-slate-400">Hari</span>
+          </h2>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button
+          id="btn-open-slip"
+          type="button"
+          class="btn-primary w-full whitespace-nowrap px-4"
+        >
+          <FileText class="w-4 h-4" />
+          Slip Gaji
+        </button>
+        <a href="/calendar" class="btn-soft w-full whitespace-nowrap px-4">
+          <CalendarIcon class="w-4 h-4" />
+          Kalender
+        </a>
+      </div>
+    </div>
+
+    <!-- SECTION ABSEN CEPAT -->
+    <div id="quick-attendance-section" class="app-card space-y-3 p-4">
+      <div class="flex items-center justify-between px-1">
+        <h3 class="section-title">Absen Cepat Hari Ini</h3>
+        <div id="quick-status-display" class="transition-all">
+          <!-- Diisi via JS Script -->
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-2 relative">
+        <button
+          type="button"
+          onclick="setAttendance('hadir')"
+          class="bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-700 font-bold py-2.5 px-2 rounded-xl border border-emerald-200/80 transition-all text-xs flex items-center justify-center"
+        >
+          Hadir
+        </button>
+
+        <div class="relative">
+          <button
+            type="button"
+            id="btn-dropdown-tidak-hadir"
+            onclick="toggleTidakHadirDropdown(event)"
+            class="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 active:scale-95 font-bold py-2.5 px-2 rounded-xl border border-amber-200/80 transition-all text-xs flex items-center justify-center gap-1"
+          >
+            Tidak Hadir
+            <ChevronDown class="w-3 h-3 opacity-60" />
+          </button>
+
+          <div
+            id="dropdown-tidak-hadir-menu"
+            class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white rounded-2xl shadow-2xl border border-slate-100 p-1.5 z-40 space-y-1 animate-in fade-in slide-in-from-top-2 duration-200"
+          >
+            <button
+              type="button"
+              onclick="setAttendance('sakit')"
+              class="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-800 rounded-xl transition-colors"
+            >
+              Sakit
+            </button>
+            <button
+              type="button"
+              onclick="setAttendance('izin')"
+              class="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-800 rounded-xl transition-colors"
+            >
+              Izin
+            </button>
+            <button
+              type="button"
+              onclick="setAttendance('alpha')"
+              class="w-full text-left px-3 py-2 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-800 rounded-xl transition-colors"
+            >
+              Alpha
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onclick="setAttendance('libur_perusahaan')"
+          class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 active:scale-95 font-bold py-2.5 px-2 rounded-xl border border-indigo-200/80 transition-all text-xs flex items-center justify-center"
+        >
+          Libur
+        </button>
+      </div>
+    </div>
+
+    <!-- PROGRESS KEHADIRAN (gaya baterai) -->
+    <div class="app-card p-4">
+      <div class="mb-2.5 flex items-baseline justify-between gap-3">
+        <p class="section-title">Kehadiran bulan ini</p>
+        <p class="text-sm font-extrabold tabular-nums text-slate-800">
+          <span id="progress-hadir">0</span>
+          <span class="text-xs font-semibold text-slate-400">
+            / <span id="progress-total">0</span> hari
+          </span>
+        </p>
+      </div>
+
+      <div
+        id="progress-track"
+        class="flex items-center gap-[3px]"
+        role="progressbar"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="0"
+        aria-label="Kehadiran 0 dari 0 hari kerja"
+      >
+        {Array.from({ length: 10 }).map(() => (
+          <span
+            data-segment
+            class="relative h-3 flex-1 overflow-hidden rounded-[3px] bg-slate-200"
+          >
+            <span
+              data-segment-fill
+              class="block h-full w-0 rounded-[3px] bg-emerald-500 transition-all"
+            ></span>
+          </span>
+        ))}
+        <span class="h-1.5 w-1 rounded-r-sm bg-slate-300"></span>
+      </div>
+    </div>
+
+    <!-- STREAK MINGGUAN -->
+    <div id="streak-card" class="app-card space-y-4 p-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="section-title">Streak Mingguan</h3>
+          <p class="text-[11px] text-slate-400">Momentum minggu berjalan</p>
+        </div>
+
+        <div class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-2xl border border-amber-200/60 font-black text-xs shadow-xs">
+          <Flame class="w-4 h-4 fill-amber-400 text-amber-500" />
+          <span id="streak-counter-text" class="tabular-nums">
+            0 Hari
+          </span>
+        </div>
+      </div>
+
+      <div
+        id="streak-container"
+        class="relative flex items-center justify-between px-1"
+      >
+        <div class="absolute left-4 right-4 top-[24px] h-0.5 bg-slate-100 -z-0"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SLIP GAJI (DESAIN RESMI SLIP GAJI KERTAS / STRUK) -->
+  <div id="slip-modal" class="modal-backdrop hidden">
+    <div
+      class="modal-panel max-h-[85vh] max-w-sm overflow-y-auto sm:max-h-[90vh]"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Slip gaji bulanan"
+    >
+      <!-- Struk Header Paper Style -->
+      <div class="text-center pb-5 border-b border-dashed border-slate-300">
+        <div class="inline-flex p-2.5 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-600 mb-2">
+          <FileText class="w-6 h-6" />
+        </div>
+        <h3 class="text-lg font-black text-slate-800 tracking-tight uppercase">
+          Slip Gaji Karyawan
+        </h3>
+        <p
+          class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5"
+          id="slip-periode-text"
+        >
+          PERIODE: YYYY-MM
+        </p>
+      </div>
+
+      <!-- Detail Informasi Karyawan -->
+      <div class="py-4 space-y-2 border-b border-dashed border-slate-300 text-xs">
+        <div class="flex justify-between items-center">
+          <span class="text-slate-400 font-medium">Nama Karyawan</span>
+          <span class="font-bold text-slate-800" id="slip-name">
+            {settings.name}
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-slate-400 font-medium">Rate / Hari Kerja</span>
+          <span class="font-bold tabular-nums text-slate-700">
+            Rp {settings.dailySalary.toLocaleString('id-ID')}
+          </span>
+        </div>
+      </div>
+
+      <!-- Rincian Gaji & Bonus -->
+      <div class="py-4 space-y-3 border-b border-dashed border-slate-300 text-xs">
+        <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">
+          Rincian Pendapatan
+        </p>
+
+        <!-- Total Kehadiran dengan Penyebut Hari Kerja Efektif -->
+        <div class="flex justify-between items-center">
+          <span class="text-slate-600 font-medium">Kehadiran Kerja</span>
+          <span
+            class="font-bold tabular-nums text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100"
+            id="slip-hadir"
+          >
+            0 / 0 Hari
+          </span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-slate-600 font-medium">
+            Gaji Pokok Terakumulasi
+          </span>
+          <span
+            class="font-bold tabular-nums text-slate-800"
+            id="slip-base-salary"
+          >
+            Rp 0
+          </span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <div class="flex flex-col">
+            <span class="text-slate-600 font-medium">Tambahan Sabtu</span>
+            <span class="text-[10px] text-slate-400" id="slip-saturday-count">
+              0 × Rp 10.000
+            </span>
+          </div>
+          <span
+            class="font-bold tabular-nums text-slate-800"
+            id="slip-saturday-bonus"
+          >
+            Rp 0
+          </span>
+        </div>
+
+        <!-- Bonus Kehadiran Full -->
+        <div class="flex justify-between items-center">
+          <div class="flex items-center gap-1">
+            <span class="text-slate-600 font-medium">Bonus Kehadiran</span>
+            <span
+              id="slip-bonus-badge"
+              class="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase"
+            >
+              <!-- status badge -->
+            </span>
+          </div>
+          <span class="font-bold tabular-nums" id="slip-bonus-amount">
+            Rp 0
+          </span>
+        </div>
+      </div>
+
+      <!-- Total Estimasi Bersih -->
+      <div class="pt-4 pb-2">
+        <div class="bg-slate-900 text-white p-4 rounded-2xl space-y-1">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+            Total Take Home Pay
+          </p>
+          <div class="flex justify-between items-baseline">
+            <span class="text-xs text-slate-300 font-medium">
+              Estimasi Bersih
+            </span>
+            <span
+              class="text-xl font-black text-emerald-400 tabular-nums"
+              id="slip-total-estimated"
+            >
+              Rp 0
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tombol Tutup -->
+      <button id="btn-close-slip" type="button" class="btn-ghost mt-3 w-full">
+        Tutup Slip Gaji
+      </button>
+    </div>
+  </div>
+
+  <slot name="nav">
+    <BottomNav activePath="dashboard" />
+  </slot>
+</Layout>
+
+<script>
+  import {
+    getSettings,
+    getMonthAttendance,
+    saveMonthAttendance,
+    formatYearMonth,
+    formatDateString,
+    initializeAutoPresent,
+    calculateSalary,
+    updateHighestStreak,
+  } from '../utils/storage';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const settings = getSettings();
+    const usernameEl = document.getElementById('header-username');
+    const slipNameEl = document.getElementById('slip-name');
+
+    if (usernameEl && settings.name)
+      usernameEl.innerText = `${settings.name} 👋`;
+    if (slipNameEl && settings.name) slipNameEl.innerText = settings.name;
+
+    syncDashboard();
+
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('dropdown-tidak-hadir-menu');
+      const btn = document.getElementById('btn-dropdown-tidak-hadir');
+      if (
+        dropdown &&
+        !dropdown.contains(e.target as Node) &&
+        btn &&
+        !btn.contains(e.target as Node)
+      ) {
+        dropdown.classList.add('hidden');
+      }
+    });
+  });
+
+  function syncDashboard() {
+    const now = new Date();
+    const ym = formatYearMonth(now);
+
+    initializeAutoPresent(ym, getSettings().workDaysPerWeek, now);
+
+    const headerDateDisplay = document.getElementById('header-date-display');
+    const formattedDate = now.toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    if (headerDateDisplay) headerDateDisplay.innerText = formattedDate;
+
+    renderQuickStatusUI(now);
+
+    // Hari Minggu tetap terkunci: tombol absen cepat dinonaktifkan
+    const isSunday = now.getDay() === 0;
+    document
+      .querySelectorAll<HTMLButtonElement>('#quick-attendance-section button')
+      .forEach((button) => {
+        button.disabled = isSunday;
+        button.classList.toggle('opacity-50', isSunday);
+        button.classList.toggle('cursor-not-allowed', isSunday);
+      });
+
+    // Update ringkasan rekap di dashboard
+    const recapHadir = document.getElementById('rekap-hadir-value');
+    const recapLibur = document.getElementById('rekap-libur-value');
+    const recapTidakHadir = document.getElementById('rekap-tidak-hadir-value');
+
+    // Update Slip Gaji di DOM
+    const salaryData = calculateSalary(ym, now);
+
+    if (recapHadir) recapHadir.innerText = String(salaryData.totalHadir);
+    if (recapLibur) recapLibur.innerText = String(salaryData.totalLibur);
+    if (recapTidakHadir) {
+      recapTidakHadir.innerText = String(
+        salaryData.totalSakit + salaryData.totalIzin + salaryData.totalAlpha
+      );
+    }
+
+    // Progress kehadiran bulan berjalan (data sama dengan kalender)
+    const progressHadir = document.getElementById('progress-hadir');
+    const progressTotal = document.getElementById('progress-total');
+    const progressTrack = document.getElementById('progress-track');
+    const progressSegments = document.querySelectorAll<HTMLElement>(
+      '[data-segment]'
+    );
+    const totalWorkingDays = salaryData.totalWorkingDaysInMonth;
+    const progressPercent =
+      totalWorkingDays > 0
+        ? Math.min(
+            100,
+            Math.round((salaryData.totalHadir / totalWorkingDays) * 100)
+          )
+        : 0;
+
+    if (progressHadir) progressHadir.innerText = String(salaryData.totalHadir);
+    if (progressTotal) progressTotal.innerText = String(totalWorkingDays);
+
+    // Bar gaya baterai: 10 sel, sel batas bisa terisi sebagian
+    const segmentCount = progressSegments.length;
+    const exactFill =
+      segmentCount > 0
+        ? Math.min(
+            segmentCount,
+            (salaryData.totalHadir / Math.max(1, totalWorkingDays)) *
+              segmentCount
+          )
+        : 0;
+    const fullSegments = Math.floor(exactFill);
+    const partialFill = exactFill - fullSegments;
+
+    progressSegments.forEach((segment, index) => {
+      const fill = segment.querySelector<HTMLElement>('[data-segment-fill]');
+      if (!fill) return;
+
+      let width = 0;
+      if (index < fullSegments) width = 100;
+      else if (index === fullSegments) width = Math.round(partialFill * 100);
+
+      fill.style.width = `${width}%`;
+    });
+
+    if (progressTrack) {
+      progressTrack.setAttribute('aria-valuenow', String(progressPercent));
+      progressTrack.setAttribute(
+        'aria-label',
+        `Kehadiran ${salaryData.totalHadir} dari ${totalWorkingDays} hari kerja`
+      );
+    }
+
+    const slipPeriode = document.getElementById('slip-periode-text');
+    const slipHadir = document.getElementById('slip-hadir');
+    const slipBase = document.getElementById('slip-base-salary');
+    const slipSaturdayCount = document.getElementById('slip-saturday-count');
+    const slipSaturdayBonus = document.getElementById('slip-saturday-bonus');
+    const slipBonusAmount = document.getElementById('slip-bonus-amount');
+    const slipBonusBadge = document.getElementById('slip-bonus-badge');
+    const slipTotal = document.getElementById('slip-total-estimated');
+
+    if (slipPeriode) slipPeriode.innerText = `PERIODE: ${ym}`;
+
+    // Total Kehadiran / Penyebut Hari Kerja Efektif (misal: 22 / 25 Hari)
+    if (slipHadir) {
+      slipHadir.innerText = `${salaryData.totalHadir} / ${salaryData.totalWorkingDaysInMonth} Hari`;
+    }
+
+    if (slipBase)
+      slipBase.innerText = `Rp ${salaryData.baseSalary.toLocaleString('id-ID')}`;
+
+    if (slipSaturdayCount) {
+      slipSaturdayCount.innerText = `${salaryData.totalHadirSabtu} × Rp ${getSettings().saturdayBonus.toLocaleString('id-ID')}`;
+    }
+    if (slipSaturdayBonus) {
+      slipSaturdayBonus.innerText = `Rp ${salaryData.saturdayBonus.toLocaleString('id-ID')}`;
+    }
+
+    // Bonus Handling (0 atau 200.000)
+    if (slipBonusAmount && slipBonusBadge) {
+      slipBonusAmount.innerText = `Rp ${salaryData.bonusAmount.toLocaleString('id-ID')}`;
+      if (salaryData.bonusEligible) {
+        slipBonusBadge.innerText = 'Cair';
+        slipBonusBadge.className =
+          'text-[9px] font-black px-1.5 py-0.5 rounded uppercase bg-emerald-100 text-emerald-700';
+        slipBonusAmount.className = 'font-bold tabular-nums text-emerald-600';
+      } else {
+        slipBonusBadge.innerText = 'Hangus';
+        slipBonusBadge.className =
+          'text-[9px] font-black px-1.5 py-0.5 rounded uppercase bg-rose-100 text-rose-700';
+        slipBonusAmount.className =
+          'font-bold tabular-nums text-slate-400 line-through';
+      }
+    }
+
+    if (slipTotal)
+      slipTotal.innerText = `Rp ${salaryData.totalEstimated.toLocaleString('id-ID')}`;
+
+    renderStreakWidget(now);
+  }
+
+  function renderQuickStatusUI(date: Date) {
+    const displayEl = document.getElementById('quick-status-display');
+    if (!displayEl) return;
+
+    const todayStr = formatDateString(date);
+    const ym = formatYearMonth(date);
+    const record = getMonthAttendance(ym);
+    const status = record[todayStr] || 'hadir';
+
+    let badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+    let statusText = 'Hadir';
+
+    if (status === 'sakit') {
+      badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+      statusText = 'Sakit';
+    } else if (status === 'izin') {
+      badgeClass = 'bg-amber-100 text-amber-800 border-amber-200';
+      statusText = 'Izin';
+    } else if (status === 'alpha') {
+      badgeClass = 'bg-amber-100 text-amber-900 border-amber-300';
+      statusText = 'Alpha';
+    } else if (status === 'libur_perusahaan' || status === 'tanggal_merah') {
+      badgeClass = 'bg-indigo-100 text-indigo-800 border-indigo-200';
+      statusText = 'Libur';
+    } else if (status === 'minggu') {
+      badgeClass = 'bg-rose-100 text-rose-700 border-rose-200';
+      statusText = 'Minggu';
+    }
+
+    displayEl.innerHTML = `
+      <span class="text-[11px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full border shadow-xs inline-block ${badgeClass}">
+        ${statusText}
+      </span>
+    `;
+  }
+
+  (window as any).toggleTidakHadirDropdown = function (e: Event) {
+    e.stopPropagation();
+    const dropdown = document.getElementById('dropdown-tidak-hadir-menu');
+    dropdown?.classList.toggle('hidden');
+  };
+
+  (window as any).setAttendance = function (status: string) {
+    const now = new Date();
+    const todayStr = formatDateString(now);
+    const ym = formatYearMonth(now);
+
+    const record = getMonthAttendance(ym);
+    record[todayStr] = status as any;
+    saveMonthAttendance(ym, record);
+
+    document
+      .getElementById('dropdown-tidak-hadir-menu')
+      ?.classList.add('hidden');
+    window.location.reload();
+  };
+
+  // 1. HITUNG STREAK GLOBAL (Akumulasi & Rekor Tertinggi)
+  function calculateGlobalStreak(date: Date): number {
+    let streakCount = 0;
+    let checkDate = new Date(date);
+
+    while (true) {
+      const dStr = formatDateString(checkDate);
+      const ym = formatYearMonth(checkDate);
+      const record = getMonthAttendance(ym);
+      const status = record[dStr];
+      const dayOfWeek = checkDate.getDay();
+
+      if (status === 'hadir' && dayOfWeek !== 0) {
+        streakCount++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (
+        status === 'libur_perusahaan' ||
+        status === 'tanggal_merah' ||
+        dayOfWeek === 0
+      ) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      } else if (
+        status === 'sakit' ||
+        status === 'izin' ||
+        status === 'alpha'
+      ) {
+        break;
+      } else {
+        break;
+      }
+    }
+
+    return updateHighestStreak(streakCount);
+  }
+
+  // 2. HITUNG STREAK MINGGUAN (Senin - Minggu Berjalan, Maksimal 6 Hari Kerjanya)
+  function calculateWeeklyStreak(date: Date): number {
+    const currentDayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
+    const mondayOffset = currentDayOfWeek - 1;
+    const mondayDate = new Date(date);
+    mondayDate.setDate(date.getDate() - mondayOffset);
+
+    let currentActiveStreak = 0;
+    let maxStreakThisWeek = 0;
+
+    let checkDate = new Date(mondayDate);
+    while (checkDate <= date) {
+      const dStr = formatDateString(checkDate);
+      const ym = formatYearMonth(checkDate);
+      const record = getMonthAttendance(ym);
+      const status = record[dStr];
+      const dayOfWeek = checkDate.getDay();
+
+      if (status === 'hadir' && dayOfWeek !== 0) {
+        currentActiveStreak++;
+        if (currentActiveStreak > maxStreakThisWeek) {
+          maxStreakThisWeek = currentActiveStreak;
+        }
+      } else if (
+        status === 'sakit' ||
+        status === 'izin' ||
+        status === 'alpha'
+      ) {
+        // Jika jebol, streak aktif reset ke 0, tapi maxStreakThisWeek TETAP MENYIMPAN rekor tertinggi minggu ini
+        currentActiveStreak = 0;
+      }
+      // Hari libur / minggu melewati hitungan tanpa memutus/mereset max streak
+
+      checkDate.setDate(checkDate.getDate() + 1);
+    }
+
+    return maxStreakThisWeek;
+  }
+
+  let activeStreakDate: string | null = null;
+
+  const SHIELD_ICON =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>';
+  const FLAME_ICON =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flame"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 3z"/></svg>';
+
+  function renderStreakWidget(date: Date) {
+    const todayStr = formatDateString(date);
+    activeStreakDate = null;
+    document.getElementById('custom-streak-tooltip')?.remove();
+
+    // Update Header Badge (Streak Global Tertinggi)
+    const activeHighestStreak = calculateGlobalStreak(date);
+    const badgeEl = document.getElementById('header-streak-badge');
+    if (badgeEl) badgeEl.innerText = `${activeHighestStreak} Hari`;
+
+    // Update Card Streak Mingguan (Minggu Berjalan saja)
+    const weeklyStreak = calculateWeeklyStreak(date);
+    const counterEl = document.getElementById('streak-counter-text');
+    if (counterEl) counterEl.innerText = `${weeklyStreak} Hari`;
+
+    const currentDayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
+    const mondayOffset = currentDayOfWeek - 1;
+    const mondayDate = new Date(date);
+    mondayDate.setDate(date.getDate() - mondayOffset);
+
+    const streakContainer = document.getElementById('streak-container');
+    if (!streakContainer) return;
+
+    streakContainer.innerHTML =
+      '<div class="absolute left-4 right-4 top-[24px] h-0.5 bg-slate-100 -z-0"></div>';
+
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(mondayDate);
+      d.setDate(mondayDate.getDate() + i);
+      const dStr = formatDateString(d);
+      const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
+      const dayNum = d.getDate();
+      const isToday = dStr === todayStr;
+      const isSunday = d.getDay() === 0;
+
+      const ym = formatYearMonth(d);
+      const record = getMonthAttendance(ym);
+      const status = record[dStr] || 'empty';
+
+      let circleContent = `<span>${dayNum}</span>`;
+      let circleStyle =
+        'border-dashed border-slate-300 bg-transparent text-slate-400';
+      let statusTitle = 'Belum ada catatan';
+      let statusDesc = 'Belum ada aksi absensi di tanggal ini.';
+      let statusBadgeColor = 'bg-slate-100 text-slate-600';
+
+      if (isSunday) {
+        circleStyle = 'border-solid border-rose-200 bg-transparent text-rose-500';
+        statusTitle = 'Hari Minggu';
+        statusDesc = 'Libur akhir pekan. Streak terlindungi & tidak terputus.';
+        statusBadgeColor = 'bg-rose-50 text-rose-700 border border-rose-200';
+        circleContent = SHIELD_ICON;
+      } else if (status === 'hadir') {
+        circleStyle =
+          'border-solid border-amber-200 bg-transparent text-amber-500';
+        statusTitle = 'Hadir';
+        statusDesc = 'Kehadiran tercatat. Momentum streak aman.';
+        statusBadgeColor =
+          'bg-emerald-50 text-emerald-700 border border-emerald-200';
+        circleContent = FLAME_ICON;
+      } else if (status === 'libur_perusahaan' || status === 'tanggal_merah') {
+        circleStyle =
+          'border-solid border-indigo-200 bg-transparent text-indigo-500';
+        statusTitle = 'Libur';
+        statusDesc = 'Hari libur aman. Streak terlindungi dan tidak terputus.';
+        statusBadgeColor = 'bg-indigo-50 text-indigo-700 border border-indigo-200';
+        circleContent = SHIELD_ICON;
+      } else if (
+        status === 'sakit' ||
+        status === 'izin' ||
+        status === 'alpha'
+      ) {
+        circleStyle =
+          'border-solid border-slate-200 bg-transparent text-slate-300';
+        statusTitle =
+          status === 'sakit' ? 'Sakit' : status === 'izin' ? 'Izin' : 'Alpha';
+        statusDesc = 'Tidak hadir. Momentum streak padam.';
+        statusBadgeColor = 'bg-amber-50 text-amber-800 border border-amber-200';
+        circleContent = FLAME_ICON;
+      }
+
+      const streakEl = document.createElement('button');
+      streakEl.type = 'button';
+      streakEl.dataset.streakDate = dStr;
+      streakEl.className =
+        'group relative z-10 flex flex-col items-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500';
+      streakEl.setAttribute('aria-expanded', 'false');
+      streakEl.setAttribute(
+        'aria-label',
+        `${dayName}, ${dayNum}: ${statusTitle}`
+      );
+      streakEl.innerHTML = `
+        <span class="mb-1 text-[10px] font-semibold uppercase text-slate-400">${dayName}</span>
+        <span class="flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-bold tabular-nums transition-all ${circleStyle} ${isToday ? 'ring-2 ring-offset-1 ring-emerald-500' : ''}">
+          ${circleContent}
+        </span>
+      `;
+
+      streakEl.addEventListener('click', () => {
+        // Tap hari yang sama untuk menutup tooltip
+        if (activeStreakDate === dStr) {
+          activeStreakDate = null;
+          document.getElementById('custom-streak-tooltip')?.remove();
+          streakEl.setAttribute('aria-expanded', 'false');
+          return;
+        }
+
+        streakContainer
+          .querySelectorAll<HTMLElement>('[data-streak-date]')
+          .forEach((element) => element.setAttribute('aria-expanded', 'false'));
+
+        activeStreakDate = dStr;
+        streakEl.setAttribute('aria-expanded', 'true');
+        showCustomTooltip({
+          day: `${dayName}, ${dayNum}`,
+          title: statusTitle,
+          desc: statusDesc,
+          badgeClass: statusBadgeColor,
+        });
+      });
+
+      streakContainer.appendChild(streakEl);
+    }
+  }
+
+  function showCustomTooltip(data: {
+    day: string;
+    title: string;
+    desc: string;
+    badgeClass: string;
+  }) {
+    let tooltipBox = document.getElementById('custom-streak-tooltip');
+    if (!tooltipBox) {
+      const streakCard = document
+        .getElementById('streak-container')
+        ?.closest('#streak-card');
+      if (!streakCard) return;
+
+      tooltipBox = document.createElement('div');
+      tooltipBox.id = 'custom-streak-tooltip';
+      tooltipBox.className =
+        'mt-4 pt-3 border-t border-slate-100 transition-all animate-in fade-in slide-in-from-top-2 duration-200';
+      streakCard.appendChild(tooltipBox);
+    }
+
+    tooltipBox.innerHTML = `
+      <div class="bg-slate-50 rounded-2xl p-3.5 border border-slate-200/60 relative">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">${data.day}</span>
+          <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${data.badgeClass}">${data.title}</span>
+        </div>
+        <p class="text-xs text-slate-600 leading-relaxed mt-1">${data.desc}</p>
+      </div>
+    `;
+  }
+
+  const hour = new Date().getHours();
+  const greetingEl = document.getElementById('greeting-text');
+  if (greetingEl) {
+    if (hour < 11) greetingEl.innerText = 'Selamat Pagi,';
+    else if (hour < 15) greetingEl.innerText = 'Selamat Siang,';
+    else if (hour < 18) greetingEl.innerText = 'Selamat Sore,';
+    else greetingEl.innerText = 'Selamat Malam,';
+  }
+
+  function updateClock() {
+    const clockEl = document.getElementById('live-clock');
+    if (clockEl) {
+      const now = new Date();
+      clockEl.innerText = now.toTimeString().split(' ')[0];
+    }
+  }
+  setInterval(updateClock, 1000);
+  updateClock();
+
+  const slipModal = document.getElementById('slip-modal');
+  document
+    .getElementById('btn-open-slip')
+    ?.addEventListener('click', () => slipModal?.classList.remove('hidden'));
+  document
+    .getElementById('btn-close-slip')
+    ?.addEventListener('click', () => slipModal?.classList.add('hidden'));
+</script>

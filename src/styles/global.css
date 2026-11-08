@@ -1,0 +1,133 @@
+@import 'tailwindcss';
+
+@layer base {
+  body {
+    @apply bg-slate-100 text-slate-800 antialiased selection:bg-emerald-500 selection:text-white;
+    font-family:
+      'Plus Jakarta Sans',
+      system-ui,
+      -apple-system,
+      sans-serif;
+  }
+
+  /* Tabular numbers untuk angka finansial, jam, & kalender agar tidak bergeser */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  /* ---------- Shell halaman ---------- */
+  .app-header {
+    @apply relative overflow-hidden rounded-b-[2.5rem] bg-gradient-to-br from-slate-900 to-slate-800 px-6 pt-8 pb-10 text-white shadow-xl;
+  }
+
+  .app-header-glow {
+    @apply pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-emerald-500/10 blur-2xl;
+  }
+
+  .app-eyebrow {
+    @apply text-xs font-medium uppercase tracking-wider text-slate-400;
+  }
+
+  .app-title {
+    @apply mt-0.5 text-2xl font-extrabold tracking-tight;
+  }
+
+  .app-card {
+    @apply rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50;
+  }
+
+  .app-card-tight {
+    @apply rounded-2xl border border-slate-100 bg-white shadow-lg shadow-slate-200/40;
+  }
+
+  .section-title {
+    @apply text-sm font-bold text-slate-800;
+  }
+
+  /* ---------- Tombol ---------- */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-95;
+  }
+
+  .btn-soft {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-3.5 text-sm font-semibold text-emerald-700 transition-all hover:bg-emerald-100 active:scale-95;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-6 py-3.5 text-sm font-semibold text-rose-700 transition-all hover:bg-rose-100 active:scale-95;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 px-6 py-3 text-xs font-bold text-slate-700 transition-all hover:bg-slate-200 active:scale-95;
+  }
+
+  .btn-danger-solid {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl bg-rose-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-rose-600/20 transition-all hover:bg-rose-700 active:scale-95;
+  }
+
+  .btn-danger-solid:disabled {
+    @apply cursor-not-allowed bg-rose-300 shadow-none;
+  }
+
+  .icon-btn {
+    @apply inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700;
+  }
+
+  .nav-btn {
+    @apply inline-flex items-center justify-center rounded-xl p-2 text-white transition-all hover:bg-white/20 active:scale-95;
+  }
+
+  /* ---------- Form ---------- */
+  .field-label {
+    @apply mb-1.5 block text-[11px] font-semibold text-slate-500;
+  }
+
+  .field-input {
+    @apply w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500;
+  }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 p-4 pb-24 backdrop-blur-sm sm:items-center sm:pb-4;
+  }
+
+  .modal-panel {
+    @apply w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl;
+  }
+
+  .modal-title {
+    @apply text-lg font-bold text-slate-800;
+  }
+
+  /* ---------- Status ---------- */
+  .status-option {
+    @apply flex items-center justify-center gap-2 rounded-2xl border px-3 py-3.5 text-sm font-semibold transition-all active:scale-95;
+  }
+
+  .status-hadir {
+    @apply border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100;
+  }
+
+  .status-amber {
+    @apply border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100;
+  }
+
+  .status-indigo {
+    @apply border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100;
+  }
+}
+
+/* Custom scrollbar tipis untuk mobile experience */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}

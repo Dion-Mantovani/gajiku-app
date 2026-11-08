@@ -1,0 +1,360 @@
+---
+// src/pages/settings.astro
+import Layout from '../layouts/Layout.astro';
+import BottomNav from '../components/BottomNav.astro';
+import { getSettings } from '../utils/storage';
+import {
+  Trash2,
+  ChevronRight,
+  AlertTriangle,
+  Info,
+  Database,
+  MessageCircle,
+} from '@lucide/astro';
+
+const settings = getSettings();
+
+// TODO: ganti dengan nomor WhatsApp kamu (format internasional tanpa +, contoh 6281234567890)
+const WA_NUMBER = '6281513498038';
+const waMessage = encodeURIComponent(
+  'Halo, saya mau kasih saran untuk aplikasi Gajiku: '
+);
+const waLink = `https://wa.me/${WA_NUMBER}?text=${waMessage}`;
+---
+
+<Layout title="Pengaturan - Absensi & Gaji">
+  <!-- TOP HEADER -->
+  <div class="app-header">
+    <div class="app-header-glow"></div>
+
+    <div class="relative z-10">
+      <p class="app-eyebrow">Preferensi aplikasi</p>
+      <h1 class="app-title">Pengaturan</h1>
+      <p class="mt-1 text-xs text-slate-400">
+        Atur profil dan dasar perhitungan gaji.
+      </p>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <div class="relative z-20 -mt-4 space-y-4 px-4 pb-8 sm:px-6">
+    <!-- FORM PENGATURAN -->
+    <form id="settings-form" class="app-card space-y-4 p-5">
+      <div>
+        <h2 class="section-title">Profil & Penggajian</h2>
+        <p class="mt-0.5 text-[11px] text-slate-400">
+          Dipakai untuk semua perhitungan di dashboard dan kalender.
+        </p>
+      </div>
+
+      <div>
+        <label class="field-label" for="input-name">
+          Nama panggilan
+        </label>
+        <input
+          type="text"
+          id="input-name"
+          required
+          autocomplete="name"
+          value={settings.name}
+          class="field-input"
+        />
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label" for="input-daily-salary">
+            Gaji harian
+          </label>
+          <div class="relative">
+            <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+              Rp
+            </span>
+            <input
+              type="number"
+              id="input-daily-salary"
+              required
+              min="0"
+              value={settings.dailySalary}
+              class="field-input pl-10 tabular-nums"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="input-saturday-bonus">
+            Tambahan Sabtu
+          </label>
+          <div class="relative">
+            <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+              Rp
+            </span>
+            <input
+              type="number"
+              id="input-saturday-bonus"
+              required
+              min="0"
+              value={settings.saturdayBonus}
+              class="field-input pl-10 tabular-nums"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="input-attendance-bonus">
+            Bonus penuh
+          </label>
+          <div class="relative">
+            <span class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
+              Rp
+            </span>
+            <input
+              type="number"
+              id="input-attendance-bonus"
+              required
+              min="0"
+              value={settings.attendanceBonus}
+              class="field-input pl-10 tabular-nums"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="input-workdays">
+            Hari kerja
+          </label>
+          <select id="input-workdays" class="field-input">
+            <option value="6">6 hari / minggu</option>
+            <option value="5">5 hari / minggu</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary w-full">
+        Simpan perubahan
+      </button>
+      <p
+        id="settings-saved"
+        class="hidden text-center text-[11px] font-semibold text-emerald-600"
+      >
+        Perubahan tersimpan.
+      </p>
+    </form>
+
+    <!-- DATA -->
+    <div class="app-card p-5">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="section-title">Data absensi</h2>
+          <p class="mt-0.5 text-[11px] text-slate-400">
+            Tersimpan lokal di perangkat ini.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-4 space-y-2">
+        <button id="btn-seed-demo" type="button" class="btn-soft w-full">
+          <Database class="w-4 h-4" />
+          Isi data contoh (2 bulan lalu)
+        </button>
+        <button
+          type="button"
+          onclick="openModal('modal-reset-confirm')"
+          class="btn-danger w-full"
+        >
+          <Trash2 class="w-4 h-4" />
+          Reset semua data
+        </button>
+      </div>
+    </div>
+
+    <!-- BANTUAN -->
+    <div class="app-card p-5">
+      <h2 class="section-title">Bantuan & masukan</h2>
+      <p class="mt-0.5 text-[11px] text-slate-400">
+        Ada ide atau menemukan masalah? Kirim langsung lewat WhatsApp.
+      </p>
+
+      <a
+        href={waLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 transition-colors hover:bg-emerald-100"
+      >
+        <span class="flex items-center gap-2.5 text-sm font-semibold text-emerald-700">
+          <MessageCircle class="h-4 w-4" />
+          Kirim saran via WhatsApp
+        </span>
+        <ChevronRight class="h-4 w-4 text-emerald-500" />
+      </a>
+    </div>
+
+    <!-- INFO -->
+    <div class="rounded-2xl border border-slate-200/70 bg-slate-100/70 p-4">
+      <div class="flex items-start gap-2.5">
+        <Info class="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+        <p class="text-[11px] leading-relaxed text-slate-500">
+          Gajiku adalah alat bantu estimasi pribadi berbasis
+          <span class="font-semibold">local-first</span>, bukan sistem
+          penggajian resmi perusahaan. Data absensi dan pengaturan hanya
+          tersimpan di browser perangkat ini.
+        </p>
+      </div>
+      <p class="mt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+        Gajiku · v1.0
+      </p>
+    </div>
+  </div>
+
+  <!-- Modal Konfirmasi Reset -->
+  <div id="modal-reset-confirm" class="modal-backdrop hidden">
+    <div class="modal-panel" role="dialog" aria-modal="true">
+      <div class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+        <AlertTriangle class="w-6 h-6" />
+      </div>
+      <h3 class="modal-title mb-1 text-center">Hapus Semua Data?</h3>
+      <p class="mb-4 px-2 text-center text-xs text-slate-500">
+        Ketik kata <strong class="text-rose-600">HAPUS</strong> di bawah ini
+        untuk mengonfirmasi tindakan.
+      </p>
+
+      <input
+        type="text"
+        id="input-confirm-hapus"
+        placeholder="Ketik HAPUS di sini..."
+        autocomplete="off"
+        class="field-input mb-4 text-center font-bold tracking-wider text-rose-600 placeholder:font-normal placeholder:normal-case placeholder:tracking-normal placeholder:text-slate-400 focus:ring-rose-500"
+      />
+
+      <div class="flex gap-3">
+        <button
+          type="button"
+          onclick="closeModal('modal-reset-confirm')"
+          class="btn-ghost w-1/2"
+        >
+          Batal
+        </button>
+        <button
+          type="button"
+          id="btn-execute-reset"
+          disabled
+          class="btn-danger-solid w-1/2"
+        >
+          Ya, Hapus
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation -->
+  <slot name="nav">
+    <BottomNav activePath="settings" />
+  </slot>
+</Layout>
+
+<script>
+  import { getSettings, saveSettings, seedSampleData } from '../utils/storage';
+
+  const inputName = document.getElementById('input-name') as HTMLInputElement;
+  const inputDailySalary = document.getElementById(
+    'input-daily-salary'
+  ) as HTMLInputElement;
+  const inputSaturdayBonus = document.getElementById(
+    'input-saturday-bonus'
+  ) as HTMLInputElement;
+  const inputAttendanceBonus = document.getElementById(
+    'input-attendance-bonus'
+  ) as HTMLInputElement;
+  const inputWorkdays = document.getElementById(
+    'input-workdays'
+  ) as HTMLSelectElement;
+  const form = document.getElementById(
+    'settings-form'
+  ) as HTMLFormElement | null;
+  const savedNote = document.getElementById('settings-saved');
+
+  // Sinkronkan isian dengan data asli di localStorage
+  function hydrateForm() {
+    const current = getSettings();
+    if (inputName) inputName.value = current.name;
+    if (inputDailySalary) inputDailySalary.value = String(current.dailySalary);
+    if (inputSaturdayBonus)
+      inputSaturdayBonus.value = String(current.saturdayBonus);
+    if (inputAttendanceBonus)
+      inputAttendanceBonus.value = String(current.attendanceBonus);
+    if (inputWorkdays) inputWorkdays.value = String(current.workDaysPerWeek);
+  }
+
+  hydrateForm();
+
+  function numberOrDefault(value: string, fallback: number): number {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+  }
+
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const current = getSettings();
+    saveSettings({
+      ...current,
+      name: inputName.value.trim() || current.name,
+      dailySalary: numberOrDefault(inputDailySalary.value, current.dailySalary),
+      saturdayBonus: numberOrDefault(
+        inputSaturdayBonus.value,
+        current.saturdayBonus
+      ),
+      attendanceBonus: numberOrDefault(
+        inputAttendanceBonus.value,
+        current.attendanceBonus
+      ),
+      workDaysPerWeek: Number.parseInt(inputWorkdays.value, 10) === 5 ? 5 : 6,
+    });
+
+    savedNote?.classList.remove('hidden');
+    window.setTimeout(() => savedNote?.classList.add('hidden'), 2000);
+  });
+
+  // Isi data contoh untuk 2 bulan sebelum bulan ini
+  document.getElementById('btn-seed-demo')?.addEventListener('click', () => {
+    seedSampleData(2);
+    window.location.reload();
+  });
+
+  // Modal konfirmasi reset
+  (window as any).openModal = function (modalId: string) {
+    document.getElementById(modalId)?.classList.remove('hidden');
+    if (modalId === 'modal-reset-confirm') {
+      const inputHapus = document.getElementById(
+        'input-confirm-hapus'
+      ) as HTMLInputElement | null;
+      const btnReset = document.getElementById(
+        'btn-execute-reset'
+      ) as HTMLButtonElement | null;
+      if (inputHapus) inputHapus.value = '';
+      if (btnReset) btnReset.disabled = true;
+    }
+  };
+
+  (window as any).closeModal = function (modalId: string) {
+    document.getElementById(modalId)?.classList.add('hidden');
+  };
+
+  const inputHapus = document.getElementById(
+    'input-confirm-hapus'
+  ) as HTMLInputElement | null;
+  const btnReset = document.getElementById(
+    'btn-execute-reset'
+  ) as HTMLButtonElement | null;
+
+  inputHapus?.addEventListener('input', (e) => {
+    const value = (e.target as HTMLInputElement).value.trim();
+    if (btnReset) btnReset.disabled = value !== 'HAPUS';
+  });
+
+  btnReset?.addEventListener('click', () => {
+    if (btnReset.disabled) return;
+    localStorage.clear();
+    window.location.href = '/';
+  });
+</script>
