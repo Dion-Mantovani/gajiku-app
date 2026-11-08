@@ -166,7 +166,9 @@ export function calculateSalary(
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   let totalHadir = 0;
+  let totalSetengahHari = 0;
   let totalHadirSabtu = 0;
+  let totalSetengahSabtu = 0;
   let totalSakit = 0;
   let totalIzin = 0;
   let totalAlpha = 0;
@@ -205,6 +207,9 @@ export function calculateSalary(
       totalHadir++;
       // Sabtu masuk dapat tambahan tersendiri
       if (dateObj.getDay() === 6) totalHadirSabtu++;
+    } else if (status === 'setengah_hari') {
+      totalSetengahHari++;
+      if (dateObj.getDay() === 6) totalSetengahSabtu++;
     } else if (status === 'sakit') {
       totalSakit++;
       hasViolatedBonus = true;
@@ -219,16 +224,22 @@ export function calculateSalary(
     }
   }
 
-  const baseSalary = totalHadir * settings.dailySalary;
-  const saturdayBonus = totalHadirSabtu * settings.saturdayBonus;
-  // Bonus hangus jika ada Sakit / Izin / Alpha
-  const bonusEligible = !hasViolatedBonus && totalHadir > 0;
+  // Setengah hari dihitung 0,5 hari kerja (Sabtu: total gaji + tambahan diprorata)
+  const effectiveHadir = totalHadir + totalSetengahHari * 0.5;
+  const effectiveSabtu = totalHadirSabtu + totalSetengahSabtu * 0.5;
+
+  const baseSalary = effectiveHadir * settings.dailySalary;
+  const saturdayBonus = effectiveSabtu * settings.saturdayBonus;
+  // Bonus hangus jika ada Sakit / Izin / Alpha (setengah hari tidak menggugurkan)
+  const bonusEligible = !hasViolatedBonus && effectiveHadir > 0;
   const bonusAmount = bonusEligible ? settings.attendanceBonus : 0;
   const totalEstimated = baseSalary + saturdayBonus + bonusAmount;
 
   return {
     totalHadir,
+    totalSetengahHari,
     totalHadirSabtu,
+    totalSetengahSabtu,
     totalSakit,
     totalIzin,
     totalAlpha,

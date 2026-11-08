@@ -67,10 +67,7 @@ const todayStr = formatDateString(today);
       <div class="min-w-0">
         <p class="app-eyebrow">Riwayat & Kalender</p>
         <h1 class="mt-1 flex items-baseline gap-2">
-          <span
-            id="month-name"
-            class="text-3xl font-extrabold tracking-tight"
-          >
+          <span id="month-name" class="text-3xl font-extrabold tracking-tight">
             {monthLabel}
           </span>
           <span
@@ -150,7 +147,8 @@ const todayStr = formatDateString(today);
           const dayNum = index + 1;
           const dateStr = `${currentYM}-${pad2(dayNum)}`;
           const isToday = dateStr === todayStr;
-          const isSunday = new Date(targetYear, targetMonth, dayNum).getDay() === 0;
+          const isSunday =
+            new Date(targetYear, targetMonth, dayNum).getDay() === 0;
           const fullDateLabel = new Date(
             targetYear,
             targetMonth,
@@ -171,7 +169,9 @@ const todayStr = formatDateString(today);
                 disabled={isSunday}
                 aria-disabled={isSunday ? 'true' : undefined}
                 title={isSunday ? 'Hari Minggu' : undefined}
-                aria-label={isSunday ? `${fullDateLabel}, Minggu` : fullDateLabel}
+                aria-label={
+                  isSunday ? `${fullDateLabel}, Minggu` : fullDateLabel
+                }
                 class={`w-full max-w-[2.75rem] sm:max-w-[3rem] aspect-square rounded-full border-2 flex items-center justify-center transition-all relative text-xs tabular-nums font-bold focus-visible:outline-none ${
                   isSunday
                     ? 'cursor-default border-rose-200 bg-rose-50 text-rose-600'
@@ -218,8 +218,8 @@ const todayStr = formatDateString(today);
       </div>
 
       <p class="mt-3 text-[10px] leading-relaxed text-slate-400">
-        Ketuk tanggal untuk mengganti status: kosong → hadir → libur → izin →
-        sakit → alpha.
+        Ketuk tanggal untuk mengganti status: <br />
+        kosong → hadir → libur → setengah hari → izin → sakit → alpha.
       </p>
     </div>
 
@@ -271,6 +271,7 @@ const todayStr = formatDateString(today);
 
   const STATUS_LABELS: Record<string, string> = {
     hadir: 'Hadir',
+    setengah_hari: 'Setengah',
     sakit: 'Sakit',
     izin: 'Izin',
     alpha: 'Alpha',
@@ -290,6 +291,7 @@ const todayStr = formatDateString(today);
     'empty',
     'hadir',
     'libur_perusahaan',
+    'setengah_hari',
     'izin',
     'sakit',
     'alpha',
@@ -342,7 +344,11 @@ const todayStr = formatDateString(today);
     return cell;
   }
 
-  function createDayCell(ym: string, day: number, isSunday: boolean): HTMLElement {
+  function createDayCell(
+    ym: string,
+    day: number,
+    isSunday: boolean
+  ): HTMLElement {
     const dateStr = `${ym}-${pad2(day)}`;
 
     const cell = document.createElement('div');
@@ -418,11 +424,20 @@ const todayStr = formatDateString(today);
         circleStyle = 'border-rose-200 bg-rose-50 text-rose-600';
       } else if (status === 'hadir') {
         circleStyle = 'border-emerald-200 bg-emerald-50 text-emerald-700';
+      } else if (status === 'setengah_hari') {
+        circleStyle =
+          'border-emerald-200 bg-[linear-gradient(90deg,#ecfdf5_50%,#f8fafc_50%)] text-emerald-700';
+        labelText = 'S. HARI';
+        labelColor = 'text-emerald-600';
       } else if (status === 'libur_perusahaan' || status === 'tanggal_merah') {
         circleStyle = 'border-indigo-200 bg-indigo-50 text-indigo-700';
         labelText = 'Libur';
         labelColor = 'text-indigo-500';
-      } else if (status === 'sakit' || status === 'izin' || status === 'alpha') {
+      } else if (
+        status === 'sakit' ||
+        status === 'izin' ||
+        status === 'alpha'
+      ) {
         circleStyle =
           status === 'alpha'
             ? 'border-amber-300 bg-amber-50 text-amber-900'
@@ -431,9 +446,7 @@ const todayStr = formatDateString(today);
         labelColor = 'text-amber-600';
       }
 
-      const todayRing = isToday
-        ? 'ring-2 ring-offset-1 ring-emerald-500'
-        : '';
+      const todayRing = isToday ? 'ring-2 ring-offset-1 ring-emerald-500' : '';
       const interactive = isSunday ? 'cursor-default' : DAY_INTERACTIVE;
       button.className = `${DAY_BASE} ${interactive} ${todayRing} ${circleStyle}`;
       button.classList.toggle('ring-emerald-500', isToday);
@@ -538,9 +551,7 @@ const todayStr = formatDateString(today);
     const record = getMonthAttendance(yearMonth);
     const previous = record[dateStr];
     const normalized =
-      previous === 'tanggal_merah'
-        ? 'libur_perusahaan'
-        : (previous ?? 'empty');
+      previous === 'tanggal_merah' ? 'libur_perusahaan' : (previous ?? 'empty');
     const index = STATUS_CYCLE.indexOf(normalized as any);
     const next = STATUS_CYCLE[(index + 1) % STATUS_CYCLE.length];
 

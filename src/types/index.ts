@@ -2,6 +2,7 @@
 
 export type AttendanceStatus =
   | 'hadir'
+  | 'setengah_hari'
   | 'sakit'
   | 'izin'
   | 'alpha'
@@ -24,7 +25,9 @@ export type MonthAttendanceRecord = Record<string, AttendanceStatus>;
 
 export interface SalarySummary {
   totalHadir: number;
+  totalSetengahHari: number;
   totalHadirSabtu: number;
+  totalSetengahSabtu: number;
   totalSakit: number;
   totalIzin: number;
   totalAlpha: number;

@@ -12,12 +12,17 @@ export function renderSlip(yearMonth: string): void {
   const settings = getSettings();
   const salary = calculateSalary(yearMonth);
 
+  const formatDays = (value: number) =>
+    value.toLocaleString('id-ID', { maximumFractionDigits: 1 });
+  const effectiveHadir = salary.totalHadir + salary.totalSetengahHari * 0.5;
+  const effectiveSabtu = salary.totalHadirSabtu + salary.totalSetengahSabtu * 0.5;
+
   setText('slip-periode-text', `PERIODE: ${yearMonth}`);
   setText('slip-name', settings.name || 'Belum diatur');
   setText('slip-rate', `Rp ${settings.dailySalary.toLocaleString('id-ID')}`);
   setText(
     'slip-hadir',
-    `${salary.totalHadir} / ${salary.totalWorkingDaysInMonth} Hari`
+    `${formatDays(effectiveHadir)} / ${salary.totalWorkingDaysInMonth} Hari`
   );
   setText(
     'slip-base-salary',
@@ -25,7 +30,7 @@ export function renderSlip(yearMonth: string): void {
   );
   setText(
     'slip-saturday-count',
-    `${salary.totalHadirSabtu} × Rp ${settings.saturdayBonus.toLocaleString('id-ID')}`
+    `${formatDays(effectiveSabtu)} × Rp ${settings.saturdayBonus.toLocaleString('id-ID')}`
   );
   setText(
     'slip-saturday-bonus',
