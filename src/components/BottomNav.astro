@@ -10,7 +10,7 @@ const { activePath } = Astro.props;
 ---
 
 <!-- Menggunakan fixed bottom-0 left-0 right-0 agar menempel sempurna di bawah layar HP -->
-<nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 py-3 flex justify-around items-center z-50 shadow-lg max-w-md mx-auto">
+<nav class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 px-6 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] flex justify-around items-center z-50 shadow-lg max-w-md mx-auto">
   <!-- Dashboard Link -->
   <a
     href="/"

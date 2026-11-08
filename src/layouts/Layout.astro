@@ -15,9 +15,16 @@ const { title = 'Absensi & Gaji PWA' } = Astro.props;
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Gajiku" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
 
@@ -33,7 +40,7 @@ const { title = 'Absensi & Gaji PWA' } = Astro.props;
     <!-- Mobile App Container Shell (Maksimal lebar ala mobile screen di desktop, full di HP) -->
     <div class="w-full max-w-md min-h-screen bg-slate-50 flex flex-col shadow-2xl relative overflow-x-hidden">
       <!-- Main Content Slot -->
-      <main class="flex-1 pb-24">
+      <main class="flex-1 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <slot />
       </main>
 
@@ -43,5 +50,17 @@ const { title = 'Absensi & Gaji PWA' } = Astro.props;
       <!-- Modal Slot (Global Modals) -->
       <slot name="modal" />
     </div>
+
+    <script>
+      if ('serviceWorker' in navigator && import.meta.env.PROD) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('/sw.js', { scope: '/' })
+            .catch(() => {
+              // Aplikasi tetap berjalan tanpa service worker.
+            });
+        });
+      }
+    </script>
   </body>
 </html>
