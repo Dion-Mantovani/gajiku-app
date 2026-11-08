@@ -2,6 +2,7 @@
 // src/pages/calendar.astro
 import Layout from '../layouts/Layout.astro';
 import BottomNav from '../components/BottomNav.astro';
+import SlipModal from '../components/SlipModal.astro';
 import { formatYearMonth, formatDateString } from '../utils/storage';
 import {
   Calendar as CalendarIcon,
@@ -44,8 +45,8 @@ const fullMonthLabel = (date: Date) =>
 const firstDayOfMonth = new Date(targetYear, targetMonth, 1);
 const totalDaysInMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
 
-// Senin = kolom pertama (0), Minggu = kolom terakhir (6)
-const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7;
+// Minggu = kolom pertama (0), Sabtu = kolom terakhir (6)
+const startDayOfWeek = firstDayOfMonth.getDay();
 const trailingBlanks = (7 - ((startDayOfWeek + totalDaysInMonth) % 7)) % 7;
 
 const monthLabel = firstDayOfMonth.toLocaleDateString('id-ID', {
@@ -121,13 +122,13 @@ const todayStr = formatDateString(today);
     <div class="app-card p-4 sm:p-5">
       <!-- Day Headers (Senin s.d. Minggu) -->
       <div class="mb-3 grid grid-cols-7 gap-x-1 border-b border-slate-100 pb-3 text-center sm:gap-x-2">
+        <span class="text-[11px] font-bold text-rose-500">Min</span>
         <span class="text-[11px] font-bold text-slate-400">Sen</span>
         <span class="text-[11px] font-bold text-slate-400">Sel</span>
         <span class="text-[11px] font-bold text-slate-400">Rab</span>
         <span class="text-[11px] font-bold text-slate-400">Kam</span>
         <span class="text-[11px] font-bold text-slate-400">Jum</span>
         <span class="text-[11px] font-bold text-slate-400">Sab</span>
-        <span class="text-[11px] font-bold text-rose-500">Min</span>
       </div>
 
       <!-- Calendar Grid -->
@@ -250,126 +251,7 @@ const todayStr = formatDateString(today);
     </div>
   </div>
 
-  <!-- MODAL SLIP GAJI BULANAN (gaya sama dengan dashboard) -->
-  <div id="slip-modal-cal" class="modal-backdrop hidden">
-    <div
-      class="modal-panel max-h-[85vh] max-w-sm overflow-y-auto sm:max-h-[90vh]"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Slip gaji bulanan"
-    >
-      <div class="border-b border-dashed border-slate-300 pb-5 text-center">
-        <div class="mb-2 inline-flex rounded-2xl border border-emerald-100 bg-emerald-50 p-2.5 text-emerald-600">
-          <FileText class="w-6 h-6" />
-        </div>
-        <h3 class="text-lg font-black uppercase tracking-tight text-slate-800">
-          Slip Gaji Karyawan
-        </h3>
-        <p
-          id="cal-slip-periode"
-          class="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-        >
-          PERIODE: {currentYM}
-        </p>
-      </div>
-
-      <div class="space-y-2 border-b border-dashed border-slate-300 py-4 text-xs">
-        <div class="flex items-center justify-between">
-          <span class="font-medium text-slate-400">Nama Karyawan</span>
-          <span class="font-bold text-slate-800" id="cal-slip-name">—</span>
-        </div>
-        <div class="flex items-center justify-between">
-          <span class="font-medium text-slate-400">Rate / Hari Kerja</span>
-          <span class="font-bold tabular-nums text-slate-700" id="cal-slip-rate">
-            Rp 0
-          </span>
-        </div>
-      </div>
-
-      <div class="space-y-3 border-b border-dashed border-slate-300 py-4 text-xs">
-        <p class="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
-          Rincian Pendapatan
-        </p>
-
-        <div class="flex items-center justify-between">
-          <span class="font-medium text-slate-600">Kehadiran Kerja</span>
-          <span
-            class="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 font-bold tabular-nums text-emerald-600"
-            id="cal-slip-hadir"
-          >
-            0 / 0 Hari
-          </span>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <span class="font-medium text-slate-600">
-            Gaji Pokok Terakumulasi
-          </span>
-          <span
-            class="font-bold tabular-nums text-slate-800"
-            id="cal-slip-base-salary"
-          >
-            Rp 0
-          </span>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <div class="flex flex-col">
-            <span class="font-medium text-slate-600">Tambahan Sabtu</span>
-            <span class="text-[10px] text-slate-400" id="cal-slip-saturday-count">
-              0 × Rp 10.000
-            </span>
-          </div>
-          <span
-            class="font-bold tabular-nums text-slate-800"
-            id="cal-slip-saturday-bonus"
-          >
-            Rp 0
-          </span>
-        </div>
-
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-1">
-            <span class="font-medium text-slate-600">Bonus Kehadiran</span>
-            <span
-              id="cal-slip-bonus-badge"
-              class="rounded px-1.5 py-0.5 text-[9px] font-black uppercase"
-            ></span>
-          </div>
-          <span class="font-bold tabular-nums" id="cal-slip-bonus-amount">
-            Rp 0
-          </span>
-        </div>
-      </div>
-
-      <div class="pt-4 pb-2">
-        <div class="space-y-1 rounded-2xl bg-slate-900 p-4 text-white">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Total Take Home Pay
-          </p>
-          <div class="flex items-baseline justify-between">
-            <span class="text-xs font-medium text-slate-300">
-              Estimasi Bersih
-            </span>
-            <span
-              class="text-xl font-black tabular-nums text-emerald-400"
-              id="cal-slip-total-estimated"
-            >
-              Rp 0
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <button
-        id="btn-close-slip-cal"
-        type="button"
-        class="btn-ghost mt-3 w-full"
-      >
-        Tutup Slip Gaji
-      </button>
-    </div>
-  </div>
+  <SlipModal />
 
   <slot name="nav">
     <BottomNav activePath="calendar" />
@@ -384,8 +266,8 @@ const todayStr = formatDateString(today);
     formatDateString,
     formatYearMonth,
     initializeAutoPresent,
-    calculateSalary,
   } from '../utils/storage';
+  import { initSlipModal, renderSlip } from '../utils/slip-modal';
 
   const STATUS_LABELS: Record<string, string> = {
     hadir: 'Hadir',
@@ -425,7 +307,6 @@ const todayStr = formatDateString(today);
     'link-next-month'
   ) as HTMLAnchorElement | null;
   const currentLink = document.getElementById('link-current-month');
-  const slipModal = document.getElementById('slip-modal-cal');
 
   function parseYM(value: string | null | undefined): string | null {
     const match = value?.match(/^(\d{4})-(\d{2})$/);
@@ -450,11 +331,6 @@ const todayStr = formatDateString(today);
   }
 
   const currentMonth = () => formatYearMonth(new Date());
-
-  function setText(id: string, text: string) {
-    const element = document.getElementById(id);
-    if (element) element.textContent = text;
-  }
 
   function createBlankCell(): HTMLElement {
     const cell = document.createElement('div');
@@ -501,7 +377,7 @@ const todayStr = formatDateString(today);
     const [year, month] = ym.split('-').map(Number);
     const firstDay = new Date(year, month - 1, 1);
     const totalDays = new Date(year, month, 0).getDate();
-    const startOffset = (firstDay.getDay() + 6) % 7;
+    const startOffset = firstDay.getDay();
     const trailing = (7 - ((startOffset + totalDays) % 7)) % 7;
 
     const fragment = document.createDocumentFragment();
@@ -618,59 +494,6 @@ const todayStr = formatDateString(today);
     currentLink?.classList.toggle('hidden', ym === currentMonth());
   }
 
-  function updateSlip(ym: string) {
-    const settings = getSettings();
-    const salary = calculateSalary(ym);
-
-    setText('cal-slip-periode', `PERIODE: ${ym}`);
-    setText('cal-slip-name', settings.name || 'Belum diatur');
-    setText(
-      'cal-slip-rate',
-      `Rp ${settings.dailySalary.toLocaleString('id-ID')}`
-    );
-    setText(
-      'cal-slip-hadir',
-      `${salary.totalHadir} / ${salary.totalWorkingDaysInMonth} Hari`
-    );
-    setText(
-      'cal-slip-base-salary',
-      `Rp ${salary.baseSalary.toLocaleString('id-ID')}`
-    );
-    setText(
-      'cal-slip-saturday-count',
-      `${salary.totalHadirSabtu} × Rp ${settings.saturdayBonus.toLocaleString('id-ID')}`
-    );
-    setText(
-      'cal-slip-saturday-bonus',
-      `Rp ${salary.saturdayBonus.toLocaleString('id-ID')}`
-    );
-    setText(
-      'cal-slip-bonus-amount',
-      `Rp ${salary.bonusAmount.toLocaleString('id-ID')}`
-    );
-    setText(
-      'cal-slip-total-estimated',
-      `Rp ${salary.totalEstimated.toLocaleString('id-ID')}`
-    );
-
-    const badge = document.getElementById('cal-slip-bonus-badge');
-    const amount = document.getElementById('cal-slip-bonus-amount');
-    if (badge && amount) {
-      if (salary.bonusEligible) {
-        badge.textContent = 'Cair';
-        badge.className =
-          'rounded px-1.5 py-0.5 text-[9px] font-black uppercase bg-emerald-100 text-emerald-700';
-        amount.className = 'font-bold tabular-nums text-emerald-600';
-      } else {
-        badge.textContent = 'Hangus';
-        badge.className =
-          'rounded px-1.5 py-0.5 text-[9px] font-black uppercase bg-rose-100 text-rose-700';
-        amount.className =
-          'font-bold tabular-nums text-slate-400 line-through';
-      }
-    }
-  }
-
   function showMonth(ym: string) {
     // Auto-present hanya untuk bulan berjalan; bulan lampau tampil apa adanya.
     if (ym === currentMonth()) {
@@ -680,7 +503,7 @@ const todayStr = formatDateString(today);
     renderGrid(ym);
     applyStatuses(ym);
     updateNavigation(ym);
-    updateSlip(ym);
+    renderSlip(ym);
   }
 
   function navigateTo(ym: string) {
@@ -726,7 +549,7 @@ const todayStr = formatDateString(today);
 
     lastChange = { dateStr, previous };
     applyStatuses(yearMonth);
-    updateSlip(yearMonth);
+    renderSlip(yearMonth);
     showStatusToast(dateStr, next);
   }
 
@@ -786,26 +609,16 @@ const todayStr = formatDateString(today);
       lastChange = null;
 
       applyStatuses(yearMonth);
-      updateSlip(yearMonth);
+      renderSlip(yearMonth);
 
       document.getElementById('status-toast')?.classList.add('hidden');
       window.clearTimeout(toastTimer);
     });
 
-  // --- Modal slip ---
-  document
-    .getElementById('btn-open-slip-cal')
-    ?.addEventListener('click', () => slipModal?.classList.remove('hidden'));
-  document
-    .getElementById('btn-close-slip-cal')
-    ?.addEventListener('click', () => slipModal?.classList.add('hidden'));
-
-  // Tutup slip lewat klik backdrop atau tombol Escape
-  slipModal?.addEventListener('click', (event) => {
-    if (event.target === slipModal) slipModal.classList.add('hidden');
-  });
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') slipModal?.classList.add('hidden');
+  // --- Modal slip (komponen bersama) ---
+  initSlipModal({
+    triggerId: 'btn-open-slip-cal',
+    getMonth: () => gridEl?.dataset.ym ?? currentMonth(),
   });
 
   // --- Render awal ---

@@ -1,0 +1,121 @@
+---
+// src/components/SlipModal.astro
+import { FileText } from '@lucide/astro';
+---
+
+<!-- MODAL SLIP GAJI (dipakai bersama oleh dashboard & kalender) -->
+<div id="slip-modal" class="modal-backdrop hidden">
+  <div
+    class="modal-panel max-h-[85vh] max-w-sm overflow-y-auto sm:max-h-[90vh]"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Slip gaji bulanan"
+  >
+    <div class="border-b border-dashed border-slate-300 pb-5 text-center">
+      <div class="mb-2 inline-flex rounded-2xl border border-emerald-100 bg-emerald-50 p-2.5 text-emerald-600">
+        <FileText class="w-6 h-6" />
+      </div>
+      <h3 class="text-lg font-black uppercase tracking-tight text-slate-800">
+        Slip Gaji Karyawan
+      </h3>
+      <p
+        id="slip-periode-text"
+        class="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+      >
+        PERIODE: —
+      </p>
+    </div>
+
+    <div class="space-y-2 border-b border-dashed border-slate-300 py-4 text-xs">
+      <div class="flex items-center justify-between">
+        <span class="font-medium text-slate-400">Nama Karyawan</span>
+        <span class="font-bold text-slate-800" id="slip-name">—</span>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="font-medium text-slate-400">Rate / Hari Kerja</span>
+        <span class="font-bold tabular-nums text-slate-700" id="slip-rate">
+          Rp 0
+        </span>
+      </div>
+    </div>
+
+    <div class="space-y-3 border-b border-dashed border-slate-300 py-4 text-xs">
+      <p class="mb-1 text-[10px] font-black uppercase tracking-wider text-slate-400">
+        Rincian Pendapatan
+      </p>
+
+      <div class="flex items-center justify-between">
+        <span class="font-medium text-slate-600">Kehadiran Kerja</span>
+        <span
+          class="rounded-md border border-emerald-100 bg-emerald-50 px-2 py-0.5 font-bold tabular-nums text-emerald-600"
+          id="slip-hadir"
+        >
+          0 / 0 Hari
+        </span>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <span class="font-medium text-slate-600">Gaji Pokok Terakumulasi</span>
+        <span
+          class="font-bold tabular-nums text-slate-800"
+          id="slip-base-salary"
+        >
+          Rp 0
+        </span>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <div class="flex flex-col">
+          <span class="font-medium text-slate-600">Tambahan Sabtu</span>
+          <span class="text-[10px] text-slate-400" id="slip-saturday-count">
+            0 × Rp 10.000
+          </span>
+        </div>
+        <span
+          class="font-bold tabular-nums text-slate-800"
+          id="slip-saturday-bonus"
+        >
+          Rp 0
+        </span>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-1">
+          <span class="font-medium text-slate-600">Bonus Kehadiran</span>
+          <span
+            id="slip-bonus-badge"
+            class="rounded px-1.5 py-0.5 text-[9px] font-black uppercase"
+          ></span>
+        </div>
+        <span class="font-bold tabular-nums" id="slip-bonus-amount">Rp 0</span>
+      </div>
+    </div>
+
+    <div class="pt-4 pb-2">
+      <div class="space-y-1 rounded-2xl bg-slate-900 p-4 text-white">
+        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          Total Take Home Pay
+        </p>
+        <div class="flex items-baseline justify-between">
+          <span class="text-xs font-medium text-slate-300">
+            Estimasi Bersih
+          </span>
+          <span
+            class="text-xl font-black tabular-nums text-emerald-400"
+            id="slip-total-estimated"
+          >
+            Rp 0
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <button
+      type="button"
+      data-slip-close
+      class="btn-ghost mt-3 w-full"
+    >
+      Tutup Slip Gaji
+    </button>
+  </div>
+</div>

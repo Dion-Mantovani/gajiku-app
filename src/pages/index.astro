@@ -3,6 +3,7 @@
 import Layout from '../layouts/Layout.astro';
 import BottomNav from '../components/BottomNav.astro';
 import OnboardingModal from '../components/OnboardingModal.astro';
+import SlipModal from '../components/SlipModal.astro';
 import {
   getSettings,
   formatYearMonth,
@@ -306,133 +307,7 @@ const totalTidakHadir =
     </div>
   </div>
 
-  <!-- MODAL SLIP GAJI (DESAIN RESMI SLIP GAJI KERTAS / STRUK) -->
-  <div id="slip-modal" class="modal-backdrop hidden">
-    <div
-      class="modal-panel max-h-[85vh] max-w-sm overflow-y-auto sm:max-h-[90vh]"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Slip gaji bulanan"
-    >
-      <!-- Struk Header Paper Style -->
-      <div class="text-center pb-5 border-b border-dashed border-slate-300">
-        <div class="inline-flex p-2.5 bg-emerald-50 rounded-2xl border border-emerald-100 text-emerald-600 mb-2">
-          <FileText class="w-6 h-6" />
-        </div>
-        <h3 class="text-lg font-black text-slate-800 tracking-tight uppercase">
-          Slip Gaji Karyawan
-        </h3>
-        <p
-          class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mt-0.5"
-          id="slip-periode-text"
-        >
-          PERIODE: YYYY-MM
-        </p>
-      </div>
-
-      <!-- Detail Informasi Karyawan -->
-      <div class="py-4 space-y-2 border-b border-dashed border-slate-300 text-xs">
-        <div class="flex justify-between items-center">
-          <span class="text-slate-400 font-medium">Nama Karyawan</span>
-          <span class="font-bold text-slate-800" id="slip-name">
-            {settings.name}
-          </span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-slate-400 font-medium">Rate / Hari Kerja</span>
-          <span class="font-bold tabular-nums text-slate-700">
-            Rp {settings.dailySalary.toLocaleString('id-ID')}
-          </span>
-        </div>
-      </div>
-
-      <!-- Rincian Gaji & Bonus -->
-      <div class="py-4 space-y-3 border-b border-dashed border-slate-300 text-xs">
-        <p class="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">
-          Rincian Pendapatan
-        </p>
-
-        <!-- Total Kehadiran dengan Penyebut Hari Kerja Efektif -->
-        <div class="flex justify-between items-center">
-          <span class="text-slate-600 font-medium">Kehadiran Kerja</span>
-          <span
-            class="font-bold tabular-nums text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100"
-            id="slip-hadir"
-          >
-            0 / 0 Hari
-          </span>
-        </div>
-
-        <div class="flex justify-between items-center">
-          <span class="text-slate-600 font-medium">
-            Gaji Pokok Terakumulasi
-          </span>
-          <span
-            class="font-bold tabular-nums text-slate-800"
-            id="slip-base-salary"
-          >
-            Rp 0
-          </span>
-        </div>
-
-        <div class="flex justify-between items-center">
-          <div class="flex flex-col">
-            <span class="text-slate-600 font-medium">Tambahan Sabtu</span>
-            <span class="text-[10px] text-slate-400" id="slip-saturday-count">
-              0 × Rp 10.000
-            </span>
-          </div>
-          <span
-            class="font-bold tabular-nums text-slate-800"
-            id="slip-saturday-bonus"
-          >
-            Rp 0
-          </span>
-        </div>
-
-        <!-- Bonus Kehadiran Full -->
-        <div class="flex justify-between items-center">
-          <div class="flex items-center gap-1">
-            <span class="text-slate-600 font-medium">Bonus Kehadiran</span>
-            <span
-              id="slip-bonus-badge"
-              class="text-[9px] font-bold px-1.5 py-0.2 rounded uppercase"
-            >
-              <!-- status badge -->
-            </span>
-          </div>
-          <span class="font-bold tabular-nums" id="slip-bonus-amount">
-            Rp 0
-          </span>
-        </div>
-      </div>
-
-      <!-- Total Estimasi Bersih -->
-      <div class="pt-4 pb-2">
-        <div class="bg-slate-900 text-white p-4 rounded-2xl space-y-1">
-          <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-            Total Take Home Pay
-          </p>
-          <div class="flex justify-between items-baseline">
-            <span class="text-xs text-slate-300 font-medium">
-              Estimasi Bersih
-            </span>
-            <span
-              class="text-xl font-black text-emerald-400 tabular-nums"
-              id="slip-total-estimated"
-            >
-              Rp 0
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tombol Tutup -->
-      <button id="btn-close-slip" type="button" class="btn-ghost mt-3 w-full">
-        Tutup Slip Gaji
-      </button>
-    </div>
-  </div>
+  <SlipModal />
 
   <slot name="nav">
     <BottomNav activePath="dashboard" />
@@ -450,6 +325,7 @@ const totalTidakHadir =
     calculateSalary,
     updateHighestStreak,
   } from '../utils/storage';
+  import { initSlipModal, renderSlip } from '../utils/slip-modal';
 
   document.addEventListener('DOMContentLoaded', () => {
     const settings = getSettings();
@@ -569,51 +445,8 @@ const totalTidakHadir =
       );
     }
 
-    const slipPeriode = document.getElementById('slip-periode-text');
-    const slipHadir = document.getElementById('slip-hadir');
-    const slipBase = document.getElementById('slip-base-salary');
-    const slipSaturdayCount = document.getElementById('slip-saturday-count');
-    const slipSaturdayBonus = document.getElementById('slip-saturday-bonus');
-    const slipBonusAmount = document.getElementById('slip-bonus-amount');
-    const slipBonusBadge = document.getElementById('slip-bonus-badge');
-    const slipTotal = document.getElementById('slip-total-estimated');
-
-    if (slipPeriode) slipPeriode.innerText = `PERIODE: ${ym}`;
-
-    // Total Kehadiran / Penyebut Hari Kerja Efektif (misal: 22 / 25 Hari)
-    if (slipHadir) {
-      slipHadir.innerText = `${salaryData.totalHadir} / ${salaryData.totalWorkingDaysInMonth} Hari`;
-    }
-
-    if (slipBase)
-      slipBase.innerText = `Rp ${salaryData.baseSalary.toLocaleString('id-ID')}`;
-
-    if (slipSaturdayCount) {
-      slipSaturdayCount.innerText = `${salaryData.totalHadirSabtu} × Rp ${getSettings().saturdayBonus.toLocaleString('id-ID')}`;
-    }
-    if (slipSaturdayBonus) {
-      slipSaturdayBonus.innerText = `Rp ${salaryData.saturdayBonus.toLocaleString('id-ID')}`;
-    }
-
-    // Bonus Handling (0 atau 200.000)
-    if (slipBonusAmount && slipBonusBadge) {
-      slipBonusAmount.innerText = `Rp ${salaryData.bonusAmount.toLocaleString('id-ID')}`;
-      if (salaryData.bonusEligible) {
-        slipBonusBadge.innerText = 'Cair';
-        slipBonusBadge.className =
-          'text-[9px] font-black px-1.5 py-0.5 rounded uppercase bg-emerald-100 text-emerald-700';
-        slipBonusAmount.className = 'font-bold tabular-nums text-emerald-600';
-      } else {
-        slipBonusBadge.innerText = 'Hangus';
-        slipBonusBadge.className =
-          'text-[9px] font-black px-1.5 py-0.5 rounded uppercase bg-rose-100 text-rose-700';
-        slipBonusAmount.className =
-          'font-bold tabular-nums text-slate-400 line-through';
-      }
-    }
-
-    if (slipTotal)
-      slipTotal.innerText = `Rp ${salaryData.totalEstimated.toLocaleString('id-ID')}`;
+    // Isi modal slip (komponen bersama dengan halaman kalender)
+    renderSlip(ym);
 
     renderStreakWidget(now);
   }
@@ -710,17 +543,15 @@ const totalTidakHadir =
     return updateHighestStreak(streakCount);
   }
 
-  // 2. HITUNG STREAK MINGGUAN (Senin - Minggu Berjalan, Maksimal 6 Hari Kerjanya)
+  // 2. HITUNG STREAK MINGGUAN (Minggu - Sabtu Berjalan)
   function calculateWeeklyStreak(date: Date): number {
-    const currentDayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
-    const mondayOffset = currentDayOfWeek - 1;
-    const mondayDate = new Date(date);
-    mondayDate.setDate(date.getDate() - mondayOffset);
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() - date.getDay()); // Minggu
 
     let currentActiveStreak = 0;
     let maxStreakThisWeek = 0;
 
-    let checkDate = new Date(mondayDate);
+    let checkDate = new Date(weekStart);
     while (checkDate <= date) {
       const dStr = formatDateString(checkDate);
       const ym = formatYearMonth(checkDate);
@@ -771,10 +602,8 @@ const totalTidakHadir =
     const counterEl = document.getElementById('streak-counter-text');
     if (counterEl) counterEl.innerText = `${weeklyStreak} Hari`;
 
-    const currentDayOfWeek = date.getDay() === 0 ? 7 : date.getDay();
-    const mondayOffset = currentDayOfWeek - 1;
-    const mondayDate = new Date(date);
-    mondayDate.setDate(date.getDate() - mondayOffset);
+    const weekStart = new Date(date);
+    weekStart.setDate(date.getDate() - date.getDay()); // Minggu
 
     const streakContainer = document.getElementById('streak-container');
     if (!streakContainer) return;
@@ -782,8 +611,8 @@ const totalTidakHadir =
     streakContainer.replaceChildren();
 
     for (let i = 0; i < 7; i++) {
-      const d = new Date(mondayDate);
-      d.setDate(mondayDate.getDate() + i);
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
       const dStr = formatDateString(d);
       const dayName = d.toLocaleDateString('id-ID', { weekday: 'short' });
       const dayNum = d.getDate();
@@ -932,11 +761,9 @@ const totalTidakHadir =
   setInterval(updateClock, 1000);
   updateClock();
 
-  const slipModal = document.getElementById('slip-modal');
-  document
-    .getElementById('btn-open-slip')
-    ?.addEventListener('click', () => slipModal?.classList.remove('hidden'));
-  document
-    .getElementById('btn-close-slip')
-    ?.addEventListener('click', () => slipModal?.classList.add('hidden'));
+  // Modal slip gaji (komponen bersama)
+  initSlipModal({
+    triggerId: 'btn-open-slip',
+    getMonth: () => formatYearMonth(new Date()),
+  });
 </script>
